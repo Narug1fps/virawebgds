@@ -13,12 +13,14 @@ import {
   BarChart3,
   Home,
   CreditCard,
+  List,
   Sparkles,
   Target,
   Settings,
   HeadphonesIcon,
   StickyNote,
 } from "lucide-react"
+import ChecklistTab from "./dashboard/checklist-tab"
 import OverviewTab from "./dashboard/overview-tab"
 import AppointmentsTab from "./dashboard/appointments-tab"
 import PatientsTab from "./dashboard/patients-tab"
@@ -65,6 +67,7 @@ export default function Dashboard({ user, onLogout, subscription }: DashboardPro
   const navItems = [
     { id: "overview", label: "Visão Geral", icon: <Home className="w-5 h-5" /> },
     { id: "notes", label: "Notas", icon: <StickyNote className="w-5 h-5" /> },
+    { id: "checklist", label: "Checklist", icon: <List className="w-5 h-5" /> },
     { id: "ai", label: "ViraBot IA", icon: <Sparkles className="w-5 h-5" /> },
     { id: "goals", label: "Metas", icon: <Target className="w-5 h-5" /> },
     { id: "appointments", label: "Agendamentos", icon: <Calendar className="w-5 h-5" /> },
@@ -142,6 +145,7 @@ export default function Dashboard({ user, onLogout, subscription }: DashboardPro
             <div className="max-w-7xl mx-auto">
               {activeTab === "overview" && <OverviewTab user={user} onNavigate={(tab) => setActiveTab(tab)} />}
               {activeTab === "notes" && <NotesTab />}
+              {activeTab === "checklist" && <ChecklistTab />}
               {activeTab === "ai" && <AISection planType={subscription?.plan_type || "basic"} />}
               {activeTab === "goals" && <GoalsSection />}
               {activeTab === "appointments" && <AppointmentsTab />}
