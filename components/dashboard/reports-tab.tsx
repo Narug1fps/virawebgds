@@ -48,7 +48,7 @@ export default function ReportsTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-foreground" />
       </div>
     )
   }
@@ -57,30 +57,28 @@ export default function ReportsTab() {
     <div>
       <h2 className="text-3xl font-bold text-foreground mb-6">Relatórios</h2>
 
-      <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <Card className="p-6 border border-border">
-          <p className="text-sm text-muted-foreground mb-2">Total de Agendamentos</p>
-          <p className="text-3xl font-bold text-primary">{stats.totalAppointments}</p>
-          <p className="text-xs text-muted-foreground mt-2">Todos os agendamentos</p>
-        </Card>
-
-        <Card className="p-6 border border-border">
-          <p className="text-sm text-muted-foreground mb-2">Pacientes Ativos</p>
-          <p className="text-3xl font-bold text-primary">{stats.activePatients}</p>
-          <p className="text-xs text-muted-foreground mt-2">Pacientes cadastrados</p>
-        </Card>
-
-        <Card className="p-6 border border-border">
-          <p className="text-sm text-muted-foreground mb-2">Taxa de Conclusão</p>
-          <p className="text-3xl font-bold text-primary">{stats.completionRate}%</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            {stats.completionRate >= 90 ? "Excelente desempenho" : "Bom desempenho"}
-          </p>
-        </Card>
+      {/* Cards de resumo no estilo calendário */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-border dark:border-slate-700 shadow-sm p-6 items-start">
+          <span className="text-xs text-muted-foreground mb-1">Total de Agendamentos</span>
+          <span className="text-3xl font-bold text-foreground">{stats.totalAppointments}</span>
+          <span className="text-xs text-muted-foreground mt-2">Todos os agendamentos</span>
+        </div>
+        <div className="flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-border dark:border-slate-700 shadow-sm p-6 items-start">
+          <span className="text-xs text-muted-foreground mb-1">Pacientes Ativos</span>
+          <span className="text-3xl font-bold text-foreground">{stats.activePatients}</span>
+          <span className="text-xs text-muted-foreground mt-2">Pacientes cadastrados</span>
+        </div>
+        <div className="flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-border dark:border-slate-700 shadow-sm p-6 items-start">
+          <span className="text-xs text-muted-foreground mb-1">Taxa de Conclusão</span>
+          <span className="text-3xl font-bold text-foreground">{stats.completionRate}%</span>
+          <span className="text-xs text-muted-foreground mt-2">{stats.completionRate >= 90 ? "Excelente desempenho" : "Bom desempenho"}</span>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-6 border border-border">
+      {/* Gráficos em cards arredondados */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-border dark:border-slate-700 shadow-sm p-6">
           <h3 className="text-lg font-bold text-foreground mb-4">Agendamentos por Mês</h3>
           {appointmentData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -99,9 +97,8 @@ export default function ReportsTab() {
               Nenhum dado disponível
             </div>
           )}
-        </Card>
-
-        <Card className="p-6 border border-border">
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-border dark:border-slate-700 shadow-sm p-6">
           <h3 className="text-lg font-bold text-foreground mb-4">Crescimento de Pacientes</h3>
           {patientData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -120,7 +117,7 @@ export default function ReportsTab() {
               Nenhum dado disponível
             </div>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   )

@@ -97,7 +97,9 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
       console.error("Error saving payment:", err)
       const raw = err instanceof Error ? err.message : String(err)
       const friendly = mapDbErrorToUserMessage(raw)
-      toast({ title: "Erro ao salvar", description: friendly, variant: "destructive" })
+      // In development show the raw server/db message too to help debugging.
+      const description = process.env.NODE_ENV !== "production" ? `${friendly}\n\n[DEBUG] ${raw}` : friendly
+      toast({ title: "Erro ao salvar", description, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -105,7 +107,7 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+    <DialogContent className="max-w-lg bg-popover dark:bg-slate-900">
         <DialogHeader>
           <DialogTitle>Registrar Pagamento</DialogTitle>
         </DialogHeader>

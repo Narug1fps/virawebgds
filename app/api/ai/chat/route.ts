@@ -93,6 +93,45 @@ export async function POST(request: NextRequest) {
         return new Response(reply)
       }
 
+      // Quantas notas o usuário tem
+      if (/quantas?.*nota|quantas?.*notas|minhas notas|minhas anotações/.test(userText)) {
+        try {
+          const n = await getCount("user_notes")
+          const reply = `Você tem ${n} ${n === 1 ? "nota" : "notas"} na sua área de notas.`
+          return new Response(reply)
+        } catch (e) {
+          console.error("Error counting user_notes:", e)
+          return new Response(FALLBACK)
+        }
+      }
+
+      // Quantos itens na checklist (todos)
+      if (/quantos?.*(itens|items).*checklist|quantos?.*itens.*checklist|minha checklist|itens da checklist/.test(userText)) {
+        try {
+          const { data: todos, error: todosErr } = await supabase.from("todos").select("id,completed").eq("user_id", userId)
+          if (todosErr) throw todosErr
+          const total = (todos || []).length
+          const completed = (todos || []).filter((t: any) => !!t.completed).length
+          const pending = total - completed
+          return new Response(`Checklist: ${total} itens no total — ${completed} concluído(s), ${pending} pendente(s).`)
+        } catch (e) {
+          console.error("Error fetching todos:", e)
+          return new Response(FALLBACK)
+        }
+      }
+
+      // Quantas metas o usuário tem
+      if (/quantas?.*meta|quantas?.*metas|minhas metas/.test(userText)) {
+        try {
+          const n = await getCount("goals")
+          const reply = `Você tem ${n} ${n === 1 ? "meta" : "metas"} cadastrada${n === 1 ? "" : "s"}.`
+          return new Response(reply)
+        } catch (e) {
+          console.error("Error counting goals:", e)
+          return new Response(FALLBACK)
+        }
+      }
+
       // Quantos agendamentos por profissional (ou de um profissional específico)
       if (/agendamentos.*por profissional|de cada profissional|por profissional/.test(userText) || /quantos.*agendamentos.*profissional/.test(userText)) {
         // detect period
@@ -332,6 +371,143 @@ export async function POST(request: NextRequest) {
         const statusText = due > 0 ? `Devendo R$ ${due.toFixed(2)}` : `Em dia (total pago R$ ${paid.toFixed(2)})`
         const reply = `Resumo financeiro de ${patient.name}: ${statusText}. Descontos aplicados: R$ ${discounts.toFixed(2)}.`
         return new Response(reply)
+      }
+
+      // Quanto de desconto um cliente tem (ex.: "Quanto de desconto o Cliente Vitor Fabian Daltro tem?")
+      if (/quanto.*descont.*cliente|quanto.*descont.*paciente|desconto.*cliente/.test(userText)) {
+        // Try to extract patient name after the words 'cliente' or 'paciente'
+        const nameMatch = userText.match(/(?:cliente|paciente)\s+([a-zçãõáéíóú\-\s]{2,120})/i)
+        const name = nameMatch ? nameMatch[1].trim() : null
+
+        if (!name) return new Response("Qual o nome do cliente que você quer consultar sobre descontos?")
+
+        const { data: patientList, error: patientError } = await supabase
+          .from("patients")
+          .select("id, name")
+          .ilike("name", `%${name}%`)
+          .eq("user_id", userId)
+          .limit(1)
+
+        if (patientError || !patientList || patientList.length === 0) {
+          return new Response(`Não encontrei cliente com nome parecido com \"${name}\".`)
+        }
+
+        const patient = patientList[0]
+
+        // Sum discounts from payments and financial_sessions for that patient
+        const [{ data: payments }, { data: sessions }] = await Promise.all([
+          supabase.from("payments").select("discount,status").eq("user_id", userId).eq("patient_id", patient.id),
+          supabase.from("financial_sessions").select("discount,paid").eq("user_id", userId).eq("patient_id", patient.id),
+        ])
+
+        let discounts = 0
+        ;(payments || []).forEach((p: any) => {
+          if (p.discount) discounts += Number(p.discount || 0)
+        })
+        ;(sessions || []).forEach((s: any) => {
+          if (s.discount) discounts += Number(s.discount || 0)
+        })
+
+        return new Response(`Cliente ${patient.name} tem R$ ${discounts.toFixed(2)} em descontos aplicados.`)
+      }
+
+      // Quanto eu ganhei (dia/semana/mês) — aceita também datas explícitas (ISO ou dd/mm/yyyy)
+      if (/quanto.*(ganhei|recebi)/.test(userText)) {
+        // check for explicit date (yyyy-mm-dd) or (dd/mm/yyyy) or (dd/mm)
+        const isoMatch = userText.match(/(\d{4}-\d{2}-\d{2})/)
+        const dmyMatch = userText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)
+        const dmMatch = userText.match(/(\d{1,2}\/\d{1,2})(?!\/)/)
+
+        const ref = new Date()
+        let start: Date = new Date()
+        let end: Date = new Date()
+
+        if (isoMatch) {
+          const dt = new Date(isoMatch[1])
+          start = new Date(dt)
+          start.setHours(0, 0, 0, 0)
+          end = new Date(dt)
+          end.setHours(23, 59, 59, 999)
+        } else if (dmyMatch) {
+          const [day, month, year] = dmyMatch[1].split("/").map(Number)
+          const dt = new Date(year, month - 1, day)
+          start = new Date(dt)
+          start.setHours(0, 0, 0, 0)
+          end = new Date(dt)
+          end.setHours(23, 59, 59, 999)
+        } else if (dmMatch) {
+          const [day, month] = dmMatch[1].split("/").map(Number)
+          const year = ref.getFullYear()
+          const dt = new Date(year, month - 1, day)
+          start = new Date(dt)
+          start.setHours(0, 0, 0, 0)
+          end = new Date(dt)
+          end.setHours(23, 59, 59, 999)
+        } else {
+          // determine period
+          let period: "day" | "week" | "month" = "day"
+          if (/semana|esta semana|essa semana/.test(userText)) period = "week"
+          if (/m(e|ê)s|mes|este m(e|ê)s|este mês|mês/.test(userText)) period = "month"
+
+          if (period === "day") {
+            start = new Date()
+            start.setHours(0, 0, 0, 0)
+            end = new Date()
+            end.setHours(23, 59, 59, 999)
+          } else if (period === "week") {
+            const d = new Date(ref)
+            const day = d.getDay()
+            const diff = (day + 6) % 7
+            start = new Date(d)
+            start.setDate(d.getDate() - diff)
+            start.setHours(0, 0, 0, 0)
+            end = new Date(start)
+            end.setDate(start.getDate() + 6)
+            end.setHours(23, 59, 59, 999)
+          } else {
+            start = new Date(ref.getFullYear(), ref.getMonth(), 1)
+            end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0)
+            end.setHours(23, 59, 59, 999)
+          }
+        }
+
+        const startISO = start.toISOString()
+        const endISO = end.toISOString()
+
+        // Sum payments (status = paid) within payment_date
+        const { data: payments, error: payErr } = await supabase
+          .from("payments")
+          .select("amount,discount,status,payment_date")
+          .eq("user_id", userId)
+          .gte("payment_date", startISO)
+          .lte("payment_date", endISO)
+
+        if (payErr) throw payErr
+
+        let total = 0
+        ;(payments || []).forEach((p: any) => {
+          if (p.status === "paid") total += Number(p.amount || 0) - Number(p.discount || 0)
+        })
+
+        // Also include paid financial_sessions (session_date is date)
+        const startDateOnly = start.toISOString().split("T")[0]
+        const endDateOnly = end.toISOString().split("T")[0]
+        const { data: sessions, error: sessErr } = await supabase
+          .from("financial_sessions")
+          .select("unit_price,discount,paid,session_date")
+          .eq("user_id", userId)
+          .gte("session_date", startDateOnly)
+          .lte("session_date", endDateOnly)
+
+        if (sessErr) throw sessErr
+        ;(sessions || []).forEach((s: any) => {
+          const price = Number(s.unit_price || 0)
+          const disc = Number(s.discount || 0)
+          if (s.paid) total += price - disc
+        })
+
+        const periodLabel = isoMatch || dmyMatch || dmMatch ? `no dia ${start.toISOString().split("T")[0]}` : /semana/.test(userText) ? "esta semana" : /m(e|ê)s|mes/.test(userText) ? "este mês" : "hoje"
+        return new Response(`Total recebido ${periodLabel}: R$ ${total.toFixed(2)}`)
       }
 
       if (/total.*recebido.*(semana|esta semana|essa semana)/.test(userText) || /recebido.*semana/.test(userText)) {

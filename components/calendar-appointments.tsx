@@ -396,31 +396,29 @@ export default function CalendarAppointments() {
           
 
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-4">
-              <div>
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+              <div className="flex-1">
                 <h3 className="font-bold text-foreground">
                   {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                 </h3>
                 <p className="text-xs text-muted-foreground">Selecione um dia para ver agendamentos</p>
               </div>
 
-              {/* Professional filter beside month name (hidden on very small screens) */}
-              <div className="hidden sm:block">
-                <div className="w-50">
-                  <Select value={selectedProfessional} onValueChange={(v) => setSelectedProfessional(v as any)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Geral (todos profissionais)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Geral (todos profissionais)</SelectItem>
-                      {professionals.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          <div className="cursor-pointer">{p.name}</div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Professional filter: stack under title on mobile, inline on desktop */}
+              <div className="w-full sm:w-44 mt-2 sm:mt-0">
+                <Select value={selectedProfessional} onValueChange={(v) => setSelectedProfessional(v as any)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Geral (todos profissionais)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Geral (todos profissionais)</SelectItem>
+                    {professionals.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <div className="cursor-pointer">{p.name}</div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div />

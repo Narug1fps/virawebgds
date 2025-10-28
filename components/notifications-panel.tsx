@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Bell, Check, CheckCheck, Trash2, X, AlertCircle, Info, CheckCircle2, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -19,6 +19,9 @@ export default function NotificationsPanel() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const [panelSide, setPanelSide] = useState<"left" | "right">("right")
+  const [panelTop, setPanelTop] = useState<number | null>(null)
 
   const loadNotifications = async () => {
     try {
@@ -36,6 +39,22 @@ export default function NotificationsPanel() {
     const interval = setInterval(loadNotifications, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      try {
+        const rect = buttonRef.current.getBoundingClientRect()
+        const spaceRight = window.innerWidth - rect.right
+        const spaceLeft = rect.left
+        // prefer side with more space (favor right when equal)
+        const preferRight = spaceRight >= spaceLeft
+        setPanelSide(preferRight ? "right" : "left")
+        setPanelTop(Math.max(8, Math.round(rect.bottom + 8)))
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [isOpen])
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -98,6 +117,7 @@ export default function NotificationsPanel() {
   return (
     <div className="relative">
       <Button
+        ref={buttonRef}
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
@@ -115,7 +135,17 @@ export default function NotificationsPanel() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <Card className="absolute right-0 top-12 w-96 max-w-[calc(100vw-2rem)] z-50 shadow-xl border border-border">
+          <Card
+            className="z-50 shadow-xl border border-border"
+            style={{
+              position: "fixed",
+              top: panelTop ? `${panelTop}px` : undefined,
+              right: panelSide === "right" ? 8 : undefined,
+              left: panelSide === "left" ? 8 : undefined,
+              width: "calc(100vw - 2rem)",
+              maxWidth: 384,
+            }}
+          >
             <div className="p-4 border-b border-border flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-primary" />

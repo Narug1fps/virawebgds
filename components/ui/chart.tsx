@@ -209,15 +209,17 @@ function ChartLegendContent(props: any) {
       {(payload as any[]).map((item: any) => {
         const key = `${nameKey || item.dataKey || 'value'}`
         const itemConfig = getPayloadConfigFromPayload(config, item, key)
+        const color = item.color || (itemConfig ? `var(--color-${key})` : undefined)
 
         return (
-          <div key={item.value ?? `${item.dataKey}`} className={'[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3'}>
-            {itemConfig?.icon && !hideIcon ? (
-              <itemConfig.icon />
-            ) : (
-              <div className="h-2 w-2 shrink-0 rounded-[2px]" style={{ backgroundColor: item.color }} />
+          <div key={item.value ?? `${item.dataKey}`} className={'flex items-center gap-3'}>
+            {!hideIcon && (
+              <div
+                className="h-3 w-3 shrink-0 rounded-full"
+                style={{ backgroundColor: color } as React.CSSProperties}
+              />
             )}
-            {itemConfig?.label}
+            <span className="text-foreground">{itemConfig?.label || item.name || item.value}</span>
           </div>
         )
       })}

@@ -67,7 +67,7 @@ export default function Dashboard({ user, onLogout, subscription }: DashboardPro
   const navItems = [
     { id: "overview", label: "Visão Geral", icon: <Home className="w-5 h-5" /> },
     { id: "notes", label: "Notas", icon: <StickyNote className="w-5 h-5" /> },
-    { id: "checklist", label: "Checklist", icon: <List className="w-5 h-5" /> },
+  { id: "checklist", label: "Checklist", icon: <List className="w-5 h-5" /> },
     { id: "ai", label: "ViraBot IA", icon: <Sparkles className="w-5 h-5" /> },
     { id: "goals", label: "Metas", icon: <Target className="w-5 h-5" /> },
     { id: "appointments", label: "Agendamentos", icon: <Calendar className="w-5 h-5" /> },

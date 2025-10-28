@@ -184,6 +184,13 @@ export default function PatientProfileModal({ patientId, isOpen, onClose, onUpda
                   >
                     {patient.status === "active" ? "Ativo" : "Inativo"}
                   </span>
+                  {/* Show patient's total discounts (if available) */}
+                  {financialSummary && (
+                    <div className="mt-3">
+                      <span className="text-xs text-muted-foreground block">Descontos acumulados</span>
+                      <span className="inline-block text-sm font-semibold">R$ {financialSummary.discounts.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
