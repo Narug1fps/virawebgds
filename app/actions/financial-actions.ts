@@ -1,6 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { mapDbErrorToUserMessage } from "@/lib/error-messages"
+import { revalidatePath } from "next/cache"
 
 export interface Payment {
   id: string
@@ -30,19 +32,15 @@ export interface SessionRow {
   payment_id: string | null
 }
 
+// ✅ LISTA DE PAGAMENTOS RECENTES
 export async function getRecentPayments(limit = 10) {
   const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) throw new Error("User not authenticated")
 
   const { data, error } = await supabase
     .from("payments")
-    .select(`*, patients (name)`)
+    .select("*, patients (name)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -55,26 +53,42 @@ export async function getRecentPayments(limit = 10) {
   return data as Payment[]
 }
 
+// ✅ REGISTRA UM PAGAMENTO
 export async function recordPayment(payload: {
   patient_id?: string | null
   appointment_id?: string | null
-  amount: number
+  amount: number | string
   discount?: number
   currency?: string
   status?: "paid" | "pending" | "overdue" | "refunded"
   payment_date?: string
   due_date?: string
   notes?: string
+  // recurrence support (optional)
+  is_recurring?: boolean
+  recurrence_unit?: "daily" | "weekly" | "monthly"
+  recurrence_interval?: number
+  recurrence_end_date?: string
 }) {
   const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) throw new Error("User not authenticated")
 
+  const amountNum = Number((payload.amount || "0").toString().replace(",", ".").trim())
+  const discountNum = Number(payload.discount || 0)
+  if (isNaN(amountNum)) throw new Error("Invalid amount value")
+
+  console.log("💰 Registrando pagamento:", {
+    user_id: user.id,
+    amount: amountNum,
+    discount: discountNum,
+    patient_id: payload.patient_id,
+  })
+
+  // Insert the payment and explicitly select only payments columns.
+  // Some PostgREST setups may try to expand related fields (eg. patient columns)
+  // and fail if the target DB doesn't have optional columns (eg. birthday).
+  // Selecting explicit columns avoids that and prevents PGRST204-like errors.
   const { data, error } = await supabase
     .from("payments")
     .insert([
@@ -82,51 +96,71 @@ export async function recordPayment(payload: {
         user_id: user.id,
         patient_id: payload.patient_id || null,
         appointment_id: payload.appointment_id || null,
-        amount: payload.amount,
-        discount: payload.discount || 0,
+        amount: amountNum,
+        discount: discountNum,
         currency: payload.currency || "BRL",
         status: payload.status || "paid",
         payment_date: payload.payment_date || new Date().toISOString(),
         due_date: payload.due_date || null,
+        is_recurring: payload.is_recurring || false,
+        recurrence_unit: payload.recurrence_unit || null,
+        recurrence_interval: payload.recurrence_interval || null,
+        recurrence_end_date: payload.recurrence_end_date || null,
         notes: payload.notes || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ])
-    .select()
+    // avoid returning related/expanded fields that may reference missing columns
+    .select(
+      "id, user_id, patient_id, appointment_id, amount, discount, currency, status, payment_date, due_date, notes, created_at, updated_at"
+    )
     .single()
 
   if (error) {
-    console.error("Error recording payment:", error)
-    throw new Error("Failed to record payment")
+    console.error("❌ Error recording payment:", error)
+    const parts = [error.message, (error as any).details, (error as any).hint, (error as any).code].filter(Boolean).map(String)
+    const full = parts.join(" | ") || "Failed to record payment"
+    const friendly = mapDbErrorToUserMessage(full)
+    throw new Error(friendly)
   }
 
-  // After successfully recording a payment, update any active financial goals
+  console.log("✅ Payment recorded successfully:", data)
+  // Atualiza metas financeiras (incrementa metas da categoria "financeiro")
   try {
-    const amountNet = Number((payload.amount || 0) - (payload.discount || 0))
-    if (amountNet && amountNet > 0) {
-      const { data: goals } = await supabase
+    const amountNet = amountNum - discountNum
+    if (amountNet > 0) {
+      const { data: goals, error: goalsError } = await supabase
         .from("goals")
         .select("id, current_value")
         .eq("user_id", user.id)
         .eq("category", "financeiro")
         .eq("status", "em_progresso")
 
-      if (goals && goals.length > 0) {
-        for (const g of goals) {
-          const current = Number(g.current_value || 0)
-          const newVal = current + amountNet
-          // update each goal individually (simple, reliable approach)
-          await supabase.from("goals").update({ current_value: newVal, updated_at: new Date().toISOString() }).eq("id", g.id)
+      if (!goalsError && goals && goals.length > 0) {
+        await Promise.all(
+          goals.map((g: any) => {
+            const newVal = (Number(g.current_value) || 0) + amountNet
+            return supabase.from("goals").update({ current_value: newVal, updated_at: new Date().toISOString() }).eq("id", g.id)
+          })
+        )
+        // revalidate dashboard so goals section updates
+        try {
+          revalidatePath("/dashboard")
+        } catch (e) {
+          // ignore revalidation errors in serverless
         }
       }
     }
-  } catch (err) {
-    console.error("Error updating financial goals after payment:", err)
-    // don't block payment recording if goals update fails
+  } catch (e) {
+    console.error("Error updating goals after payment:", e)
   }
 
   return data as Payment
 }
 
+
+// ✅ RESUMO FINANCEIRO (DIÁRIO, SEMANAL, MENSAL)
 export async function getFinancialSummary(period: "daily" | "weekly" | "monthly") {
   const supabase = await createClient()
 
@@ -138,10 +172,10 @@ export async function getFinancialSummary(period: "daily" | "weekly" | "monthly"
   if (authError || !user) throw new Error("User not authenticated")
 
   const now = new Date()
-  let startDate = new Date()
+  const startDate = new Date()
 
   if (period === "daily") {
-    startDate.setDate(now.getDate())
+    startDate.setHours(0, 0, 0, 0)
   } else if (period === "weekly") {
     startDate.setDate(now.getDate() - 7)
   } else {
@@ -150,24 +184,14 @@ export async function getFinancialSummary(period: "daily" | "weekly" | "monthly"
 
   const startISO = startDate.toISOString()
 
-  // Fetch payments in period
-  let payments: any[] | null = null
-  try {
-    const res = await supabase
-      .from("payments")
-      .select("amount, discount, status, payment_date")
-      .eq("user_id", user.id)
-      .gte("payment_date", startISO)
+  const { data, error } = await supabase
+    .from("payments")
+    .select("amount, discount, status, payment_date")
+    .eq("user_id", user.id)
+    .gte("payment_date", startISO)
 
-    if (res.error) {
-      console.error("Error fetching payments summary:", res.error)
-      // don't throw — return zeros to keep the dashboard stable
-      return { totalReceived: 0, totalDiscounts: 0, totalPending: 0 }
-    }
-
-    payments = res.data as any[]
-  } catch (err) {
-    console.error("Unexpected error fetching payments summary:", err)
+  if (error) {
+    console.error("Error fetching payments summary:", error)
     return { totalReceived: 0, totalDiscounts: 0, totalPending: 0 }
   }
 
@@ -175,7 +199,7 @@ export async function getFinancialSummary(period: "daily" | "weekly" | "monthly"
   let totalDiscounts = 0
   let totalPending = 0
 
-  ;(payments || []).forEach((p: any) => {
+  data?.forEach((p: any) => {
     const amt = Number(p.amount || 0)
     const disc = Number(p.discount || 0)
     if (p.status === "paid") totalReceived += amt
@@ -183,14 +207,10 @@ export async function getFinancialSummary(period: "daily" | "weekly" | "monthly"
     if (p.status === "pending" || p.status === "overdue") totalPending += amt - disc
   })
 
-  return {
-    totalReceived,
-    totalDiscounts,
-    totalPending,
-  }
+  return { totalReceived, totalDiscounts, totalPending }
 }
 
-// Return time-series for charting. period: 'days' number of past days
+// ✅ SÉRIE TEMPORAL (GRÁFICO FINANCEIRO)
 export async function getFinancialSeries(days = 30) {
   const supabase = await createClient()
 
@@ -215,8 +235,7 @@ export async function getFinancialSeries(days = 30) {
 
   if (error) {
     console.error("Error fetching payments for series:", error)
-    // return an array of zeros
-    const zeros = [] as { date: string; value: number }[]
+    const zeros: { date: string; value: number }[] = []
     for (let i = 0; i < days; i++) {
       const d = new Date()
       d.setDate(d.getDate() - (days - 1 - i))
@@ -226,7 +245,7 @@ export async function getFinancialSeries(days = 30) {
   }
 
   const map: Record<string, number> = {}
-  ;(payments || []).forEach((p: any) => {
+  payments?.forEach((p: any) => {
     const date = p.payment_date ? new Date(p.payment_date).toISOString().split("T")[0] : null
     if (!date) return
     const amt = Number(p.amount || 0) - Number(p.discount || 0)
@@ -244,6 +263,135 @@ export async function getFinancialSeries(days = 30) {
   return series
 }
 
+// Relatório financeiro: retorno agrupado por dia/semana/mês
+export async function getFinancialReport(period: "daily" | "weekly" | "monthly") {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) throw new Error("User not authenticated")
+
+  if (period === "daily") {
+    // last 7 days, grouped by date
+    const start = new Date()
+    start.setDate(start.getDate() - 6)
+    start.setHours(0, 0, 0, 0)
+    const { data, error } = await supabase
+      .from("payments")
+      .select("amount, discount, payment_date")
+      .eq("user_id", user.id)
+      .gte("payment_date", start.toISOString())
+
+    if (error) {
+      console.error("Error fetching daily report:", error)
+      return []
+    }
+
+    const map: Record<string, number> = {}
+    data?.forEach((p: any) => {
+      const date = p.payment_date ? new Date(p.payment_date).toISOString().split("T")[0] : null
+      if (!date) return
+      const amt = Number(p.amount || 0) - Number(p.discount || 0)
+      map[date] = (map[date] || 0) + amt
+    })
+
+    const out: { date: string; total: number }[] = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date()
+      d.setDate(d.getDate() - (6 - i))
+      const key = d.toISOString().split("T")[0]
+      out.push({ date: key, total: Number((map[key] || 0).toFixed(2)) })
+    }
+    return out
+  }
+
+  if (period === "weekly") {
+    // last 12 weeks, grouped by week start
+    const weeks = 12
+    const start = new Date()
+    start.setDate(start.getDate() - (weeks * 7 - 1))
+    start.setHours(0, 0, 0, 0)
+    const { data, error } = await supabase
+      .from("payments")
+      .select("amount, discount, payment_date")
+      .eq("user_id", user.id)
+      .gte("payment_date", start.toISOString())
+
+    if (error) {
+      console.error("Error fetching weekly report:", error)
+      return []
+    }
+
+    const map: Record<string, number> = {}
+    data?.forEach((p: any) => {
+      if (!p.payment_date) return
+      const dt = new Date(p.payment_date)
+      // ISO week bucket by monday
+      const monday = new Date(dt)
+      const day = monday.getDay()
+      const diff = (day + 6) % 7 // shift so monday=0
+      monday.setDate(monday.getDate() - diff)
+      const key = monday.toISOString().split("T")[0]
+      const amt = Number(p.amount || 0) - Number(p.discount || 0)
+      map[key] = (map[key] || 0) + amt
+    })
+
+    const out: { weekStart: string; total: number }[] = []
+    for (let i = 0; i < weeks; i++) {
+      const d = new Date()
+      d.setDate(d.getDate() - (weeks * 7 - 7) + i * 7)
+      const monday = new Date(d)
+      const day = monday.getDay()
+      const diff = (day + 6) % 7
+      monday.setDate(monday.getDate() - diff)
+      const key = monday.toISOString().split("T")[0]
+      out.push({ weekStart: key, total: Number((map[key] || 0).toFixed(2)) })
+    }
+    return out
+  }
+
+  // monthly
+  // last 12 months
+  const months = 12
+  const start = new Date()
+  start.setMonth(start.getMonth() - (months - 1))
+  start.setDate(1)
+  start.setHours(0, 0, 0, 0)
+  const { data, error } = await supabase
+    .from("payments")
+    .select("amount, discount, payment_date")
+    .eq("user_id", user.id)
+    .gte("payment_date", start.toISOString())
+
+  if (error) {
+    console.error("Error fetching monthly report:", error)
+    return []
+  }
+
+  const map: Record<string, number> = {}
+  data?.forEach((p: any) => {
+    if (!p.payment_date) return
+    const dt = new Date(p.payment_date)
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`
+    const amt = Number(p.amount || 0) - Number(p.discount || 0)
+    map[key] = (map[key] || 0) + amt
+  })
+
+  const out: { month: string; total: number }[] = []
+  for (let i = 0; i < months; i++) {
+    const d = new Date()
+    d.setMonth(d.getMonth() - (months - 1 - i))
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    out.push({ month: key, total: Number((map[key] || 0).toFixed(2)) })
+  }
+
+  return out
+}
+
+// ✅ RESUMO FINANCEIRO POR PACIENTE
 export async function getPatientFinancialSummary(patientId: string) {
   const supabase = await createClient()
 
@@ -256,24 +404,20 @@ export async function getPatientFinancialSummary(patientId: string) {
 
   const [{ data: payments }, { data: sessions }] = await Promise.all([
     supabase.from("payments").select("amount,discount,status,payment_date").eq("user_id", user.id).eq("patient_id", patientId),
-    supabase
-      .from("financial_sessions")
-      .select("unit_price,discount,paid")
-      .eq("user_id", user.id)
-      .eq("patient_id", patientId),
+    supabase.from("financial_sessions").select("unit_price,discount,paid").eq("user_id", user.id).eq("patient_id", patientId),
   ])
 
   let paid = 0
   let discounts = 0
   let due = 0
 
-  ;(payments || []).forEach((p: any) => {
+  payments?.forEach((p: any) => {
     if (p.status === "paid") paid += Number(p.amount || 0)
     if (p.discount) discounts += Number(p.discount || 0)
     if (p.status === "pending" || p.status === "overdue") due += Number(p.amount || 0) - Number(p.discount || 0)
   })
 
-  ;(sessions || []).forEach((s: any) => {
+  sessions?.forEach((s: any) => {
     const price = Number(s.unit_price || 0)
     const disc = Number(s.discount || 0)
     if (s.paid) paid += price - disc
@@ -281,13 +425,10 @@ export async function getPatientFinancialSummary(patientId: string) {
     if (disc) discounts += disc
   })
 
-  return {
-    paid,
-    due,
-    discounts,
-  }
+  return { paid, due, discounts }
 }
 
+// ✅ LISTA DE PACIENTES COM DÉBITOS
 export async function getOutstandingPatients() {
   const supabase = await createClient()
 
@@ -298,7 +439,6 @@ export async function getOutstandingPatients() {
 
   if (authError || !user) throw new Error("User not authenticated")
 
-  // Find sessions not paid grouped by patient
   const { data, error } = await supabase
     .from("financial_sessions")
     .select("patient_id, unit_price, discount")
@@ -311,13 +451,12 @@ export async function getOutstandingPatients() {
   }
 
   const map: Record<string, number> = {}
-  ;(data || []).forEach((s: any) => {
+  data?.forEach((s: any) => {
     const pid = s.patient_id || "unknown"
     const val = Number(s.unit_price || 0) - Number(s.discount || 0)
     map[pid] = (map[pid] || 0) + val
   })
 
-  // Convert to array and fetch patient names
   const patientIds = Object.keys(map).filter((id) => id !== "unknown")
   if (patientIds.length === 0) return []
 
@@ -331,5 +470,9 @@ export async function getOutstandingPatients() {
     return []
   }
 
-  return (patients || []).map((p: any) => ({ id: p.id, name: p.name, outstanding: map[p.id] || 0 }))
+  return (patients || []).map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    outstanding: map[p.id] || 0,
+  }))
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import {
   getAppointments,
@@ -34,6 +35,7 @@ export default function CalendarAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([])
   const [professionals, setProfessionals] = useState<Array<{ id: string; name: string }>>([])
+  const [selectedProfessional, setSelectedProfessional] = useState<string | "all">("all")
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
@@ -90,7 +92,11 @@ export default function CalendarAppointments() {
   }
 
   const getAppointmentsForDate = (dateStr: string) => {
-    return appointments.filter((apt) => apt.appointment_date === dateStr)
+    return appointments.filter((apt) => {
+      if (apt.appointment_date !== dateStr) return false
+      if (selectedProfessional === "all") return true
+      return apt.professional_id === selectedProfessional
+    })
   }
 
   const selectedDateAppointments = getAppointmentsForDate(selectedDate)
@@ -386,18 +392,38 @@ export default function CalendarAppointments() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Calendar */}
         <Card className="lg:col-span-1 p-6 border border-border">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-foreground">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h3>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrevMonth}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleNextMonth}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+          {/* Professional filter on top */}
+          
+
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-4">
+              <div>
+                <h3 className="font-bold text-foreground">
+                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </h3>
+                <p className="text-xs text-muted-foreground">Selecione um dia para ver agendamentos</p>
+              </div>
+
+              {/* Professional filter beside month name (hidden on very small screens) */}
+              <div className="hidden sm:block">
+                <div className="w-50">
+                  <Select value={selectedProfessional} onValueChange={(v) => setSelectedProfessional(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Geral (todos profissionais)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Geral (todos profissionais)</SelectItem>
+                      {professionals.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <div className="cursor-pointer">{p.name}</div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
+            <div />
           </div>
 
           {/* Day names */}
@@ -410,34 +436,51 @@ export default function CalendarAppointments() {
           </div>
 
           {/* Calendar days */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-3">
             {calendarDays.map((day, index) => {
               const dateStr = day ? formatDate(currentDate.getFullYear(), currentDate.getMonth(), day) : null
               const dayAppointments = dateStr ? getAppointmentsForDate(dateStr) : []
               const isSelected = dateStr === selectedDate
               const isToday = dateStr === new Date().toISOString().split("T")[0]
 
+              if (!day) {
+                return <div key={index} className="w-10 h-10" />
+              }
+
               return (
                 <button
                   key={index}
-                  onClick={() => day && handleDayClick(day)}
-                  disabled={!day}
-                  className={`
-                    aspect-square rounded-lg text-sm font-medium transition-all
-                    ${!day ? "opacity-0 cursor-default" : "cursor-pointer hover:bg-primary/10"}
-                    ${isSelected ? "bg-primary text-primary-foreground shadow-lg" : ""}
-                    ${isToday && !isSelected ? "border-2 border-primary" : "border border-border"}
-                    ${dayAppointments.length > 0 && !isSelected ? "bg-blue-50" : ""}
-                    flex flex-col items-center justify-center relative
-                  `}
+                  onClick={() => handleDayClick(day)}
+                  className={`w-10 h-10 flex flex-col cursor-pointer items-center justify-center text-sm font-medium transition-all relative ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground rounded-full shadow-lg"
+                      : "bg-background rounded-md border border-border hover:bg-primary/5"
+                  }`}
                 >
-                  <span>{day}</span>
-                  {dayAppointments.length > 0 && (
-                    <span className="text-xs mt-1 font-bold text-primary">{dayAppointments.length}</span>
+                  <span className="leading-none">{day}</span>
+
+                  {/* Today indicator (small dot) */}
+                  {isToday && !isSelected && (
+                    <span className="absolute -top-2 -right-2 w-2 h-2 rounded-full ring-2 ring-primary/40 bg-primary" />
+                  )}
+
+                  {/* Appointment count under the number; hide when the day is selected */}
+                  {dayAppointments.length > 0 && !isSelected && (
+                    <span className="mt-1 text-[11px] text-primary">{dayAppointments.length} </span>
                   )}
                 </button>
               )
             })}
+          </div>
+
+          {/* Month navigation below the calendar */}
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <Button variant="outline" size="sm" onClick={handlePrevMonth} className="p-2">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleNextMonth} className="p-2">
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         </Card>
 

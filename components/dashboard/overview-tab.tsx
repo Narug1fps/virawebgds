@@ -110,9 +110,9 @@ export default function OverviewTab({ user, onNavigate }: OverviewTabProps) {
         <p className="text-muted-foreground">Aqui está um resumo do seu dia na clínica/empresa</p>
       </div>
 
-      <Card className="p-6 border-2 border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50">
+      <Card className="p-6 border border-border bg-card">
         <div className="flex items-start gap-4">
-          <div className="p-3 rounded-full bg-pink-500 text-white">
+          <div className="p-3 rounded-full bg-secondary text-secondary-foreground">
             <Cake className="w-6 h-6" />
           </div>
           <div className="flex-1">
@@ -120,22 +120,22 @@ export default function OverviewTab({ user, onNavigate }: OverviewTabProps) {
             <div className="space-y-2">
               {birthdays.length > 0 ? (
                 birthdays.map((person) => (
-                  <div key={person.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                  <div key={person.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${person.type === "client" ? "bg-blue-100" : "bg-green-100"}`}>
+                      <div className={`p-2 rounded-full ${person.type === "client" ? "bg-blue-100 dark:bg-blue-900" : "bg-green-100 dark:bg-green-900"}`}>
                         {person.type === "client" ? (
-                          <Users className="w-4 h-4 text-blue-600" />
+                          <Users className="w-4 h-4 text-blue-600 dark:text-blue-300" />
                         ) : (
-                          <Briefcase className="w-4 h-4 text-green-600" />
+                          <Briefcase className="w-4 h-4 text-green-600 dark:text-green-300" />
                         )}
                       </div>
                       <div>
                         <p className="font-semibold text-foreground">{person.name}</p>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm text-muted-foreground">{person.phone}</p>
+                          <p className="text-sm text-muted-foreground break-words">{person.phone}</p>
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full ${
-                              person.type === "client" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                              person.type === "client" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200" : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
                             }`}
                           >
                             {person.type === "client" ? "Cliente" : "Profissional"}
@@ -146,7 +146,7 @@ export default function OverviewTab({ user, onNavigate }: OverviewTabProps) {
                   </div>
                 ))
               ) : (
-                <div className="p-4 bg-white rounded-lg text-muted-foreground">Nenhum aniversariante hoje</div>
+                <div className="p-4 bg-muted rounded-lg text-muted-foreground">Nenhum aniversariante hoje</div>
               )}
             </div>
           </div>

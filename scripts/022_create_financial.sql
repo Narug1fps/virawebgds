@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
 );
 
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
--- Drop existing policies if they exist (make script idempotent)
+
 DROP POLICY IF EXISTS "payments_select_own" ON public.payments;
 DROP POLICY IF EXISTS "payments_insert_own" ON public.payments;
 DROP POLICY IF EXISTS "payments_update_own" ON public.payments;
@@ -42,7 +42,7 @@ CREATE INDEX IF NOT EXISTS payments_user_id_idx ON public.payments(user_id);
 CREATE INDEX IF NOT EXISTS payments_patient_id_idx ON public.payments(patient_id);
 CREATE INDEX IF NOT EXISTS payments_payment_date_idx ON public.payments(payment_date);
 
--- Create financial_sessions table (one row per service/session rendered)
+-- Create financial_sessions table
 CREATE TABLE IF NOT EXISTS public.financial_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS public.financial_sessions (
 );
 
 ALTER TABLE public.financial_sessions ENABLE ROW LEVEL SECURITY;
--- Drop existing policies if they exist (make script idempotent)
+
 DROP POLICY IF EXISTS "sessions_select_own" ON public.financial_sessions;
 DROP POLICY IF EXISTS "sessions_insert_own" ON public.financial_sessions;
 DROP POLICY IF EXISTS "sessions_update_own" ON public.financial_sessions;

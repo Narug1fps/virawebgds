@@ -163,6 +163,69 @@ export async function deleteAppointment(appointmentId: string) {
   return { success: true }
 }
 
+// Retorna contagem de agendamentos por profissional para um período (dia/semana/mês)
+export async function getAppointmentCountsByProfessional(period: "day" | "week" | "month", referenceDate?: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) throw new Error("User not authenticated")
+
+  const ref = referenceDate ? new Date(referenceDate) : new Date()
+
+  let start: Date = new Date()
+  let end: Date = new Date()
+
+  if (period === "day") {
+    start = new Date(ref)
+    start.setHours(0, 0, 0, 0)
+    end = new Date(ref)
+    end.setHours(23, 59, 59, 999)
+  } else if (period === "week") {
+    // week starting on Monday
+    const d = new Date(ref)
+    const day = d.getDay()
+    const diff = (day + 6) % 7
+    start = new Date(d)
+    start.setDate(d.getDate() - diff)
+    start.setHours(0, 0, 0, 0)
+    end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    end.setHours(23, 59, 59, 999)
+  } else {
+    // month
+    start = new Date(ref.getFullYear(), ref.getMonth(), 1)
+    end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0)
+    end.setHours(23, 59, 59, 999)
+  }
+
+  const startISO = start.toISOString().split("T")[0]
+  const endISO = end.toISOString().split("T")[0]
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("professional_id")
+    .eq("user_id", user.id)
+    .gte("appointment_date", startISO)
+    .lte("appointment_date", endISO)
+
+  if (error) {
+    console.error("Error fetching appointment counts:", error)
+    return []
+  }
+
+  const map: Record<string, number> = {}
+  data?.forEach((row: any) => {
+    const key = row.professional_id || "unknown"
+    map[key] = (map[key] || 0) + 1
+  })
+
+  return Object.keys(map).map((k) => ({ professional_id: k === "unknown" ? null : k, count: map[k] }))
+}
+
 export async function updateAppointmentStatus(appointmentId: string, status: string) {
   const supabase = await createClient()
 

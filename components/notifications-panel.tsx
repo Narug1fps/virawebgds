@@ -101,11 +101,12 @@ export default function NotificationsPanel() {
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative text-muted-foreground hover:text-foreground hover:bg-muted"
+        className="relative text-muted-foreground hover:text-foreground hover:bg-muted p-2"
+        aria-label="Notificações"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-semibold">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-semibold px-1">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -115,7 +116,7 @@ export default function NotificationsPanel() {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <Card className="absolute right-0 top-12 w-96 max-w-[calc(100vw-2rem)] z-50 shadow-xl border border-border">
-            <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="p-4 border-b border-border flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold text-foreground">Notificações</h3>
@@ -155,18 +156,18 @@ export default function NotificationsPanel() {
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-4 hover:bg-muted/50 transition-colors ${!notification.read ? "bg-primary/5" : ""}`}
+                      className={`p-3 transition-colors ${!notification.read ? "bg-background/50 border-l-4 border-primary/30" : ""}`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 mt-0.5">{getIcon(notification.type)}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-1">
-                            <h4 className="font-semibold text-sm text-foreground">{notification.title}</h4>
+                            <h4 className="font-semibold text-sm text-foreground truncate">{notification.title}</h4>
                             {!notification.read && (
                               <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1" />
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
+                          <p className="text-sm text-muted-foreground mb-2 truncate">{notification.message}</p>
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">{formatDate(notification.created_at)}</span>
                             <div className="flex items-center gap-1">
@@ -178,7 +179,7 @@ export default function NotificationsPanel() {
                                   className="h-7 px-2 text-xs"
                                 >
                                   <Check className="w-3 h-3 mr-1" />
-                                  Marcar lida
+                                  Lida
                                 </Button>
                               )}
                               <Button

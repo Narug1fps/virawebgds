@@ -191,25 +191,25 @@ export default function PatientProfileModal({ patientId, isOpen, onClose, onUpda
             {/* Patient Information */}
             <Card className="p-6">
               <h4 className="text-lg font-bold text-foreground mb-4">Informações do Cliente</h4>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4 min-w-0">
                 {patient.email && (
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                       <Mail className="w-5 h-5 text-primary" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm font-medium text-foreground">{patient.email}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{patient.email}</p>
                     </div>
                   </div>
                 )}
 
                 {patient.phone && (
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                       <Phone className="w-5 h-5 text-primary" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-muted-foreground">Telefone</p>
                       <p className="text-sm font-medium text-foreground">{patient.phone}</p>
                     </div>
@@ -217,8 +217,8 @@ export default function PatientProfileModal({ patientId, isOpen, onClose, onUpda
                 )}
 
                 {patient.cpf && (
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
@@ -228,23 +228,30 @@ export default function PatientProfileModal({ patientId, isOpen, onClose, onUpda
                   </div>
                 )}
 
-                {(patient.date_of_birth || patient.birthday) && (
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
+                {(patient.birthday || patient.date_of_birth) && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg flex-shrink-0">
                       <Calendar className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Data de Nascimento</p>
                       <p className="text-sm font-medium text-foreground">
-                        {new Date(patient.birthday || patient.date_of_birth!).toLocaleDateString("pt-BR")}
+                        {(() => {
+                          const raw = (patient.birthday || patient.date_of_birth) as string | undefined
+                          try {
+                            return raw ? new Date(raw).toLocaleDateString("pt-BR") : ""
+                          } catch (e) {
+                            return ""
+                          }
+                        })()}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {patient.address && (
-                  <div className="flex items-center gap-3 sm:col-span-2">
-                    <div className="p-2 bg-primary/10 rounded-lg">
+                  <div className="flex items-start gap-3 sm:col-span-2">
+                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
                       <MapPin className="w-5 h-5 text-primary" />
                     </div>
                     <div>

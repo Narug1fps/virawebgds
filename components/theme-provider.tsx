@@ -7,5 +7,10 @@ import {
 } from 'next-themes'
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+  // Use class attribute so `.dark` class in globals.css is toggled by next-themes
+  return (
+    <NextThemesProvider attribute="class" defaultTheme="light" {...props}>
+      {children}
+    </NextThemesProvider>
+  )
 }

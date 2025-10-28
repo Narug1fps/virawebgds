@@ -120,7 +120,7 @@ export default function Dashboard({ user, onLogout, subscription }: DashboardPro
             sidebarOpen ? "w-64" : "w-0"
           } border-r border-border bg-card transition-all duration-300 overflow-hidden lg:w-64`}
         >
-          <nav className="p-4 space-y-2 h-[calc(100vh-73px)] overflow-y-auto">
+          <nav className="p-4 space-y-2  h-[calc(100vh-73px)] overflow-y-auto">
             {navItems.map((item) => (
               <NavItem
                 key={item.id}
@@ -174,7 +174,7 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+      className={`w-full cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
         active
           ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-md"
           : "text-foreground hover:bg-muted"

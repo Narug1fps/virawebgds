@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getPatients } from "@/app/actions/patients"
 import { recordPayment } from "@/app/actions/financial-actions"
 import { useToast } from "@/hooks/use-toast"
+import { mapDbErrorToUserMessage } from "@/lib/error-messages"
 
 
 interface Props {
@@ -26,6 +27,9 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
   const [status, setStatus] = useState<string>("paid")
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10))
   const [loading, setLoading] = useState(false)
+  const [isRecurring, setIsRecurring] = useState(false)
+  // recurrence simplified: only allow monthly recurrence on a given day
+  const [recurrenceDay, setRecurrenceDay] = useState<number>(Number(new Date().toISOString().slice(8, 10)) || 1)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -78,6 +82,12 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
         discount: discountReais,
         status: status as any,
         payment_date: new Date(date).toISOString(),
+        is_recurring: isRecurring,
+        // simplified recurring model: monthly on the chosen day
+        recurrence_unit: isRecurring ? 'monthly' : undefined,
+        recurrence_interval: isRecurring ? 1 : undefined,
+        // no recurrence_end_date for now (infinite until user cancels)
+        recurrence_end_date: undefined,
       })
 
       toast({ title: "Pagamento registrado", description: "Pagamento salvo com sucesso." })
@@ -85,7 +95,9 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
       if (onSaved) onSaved()
     } catch (err) {
       console.error("Error saving payment:", err)
-      toast({ title: "Erro ao salvar", description: "Não foi possível salvar o pagamento." })
+      const raw = err instanceof Error ? err.message : String(err)
+      const friendly = mapDbErrorToUserMessage(raw)
+      toast({ title: "Erro ao salvar", description: friendly, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -164,6 +176,30 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
           <div>
             <label className="text-sm text-muted-foreground mb-1 block">Data do Pagamento</label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="text-sm text-muted-foreground mb-1 block">Recorrência</label>
+            <div className="flex items-center gap-2">
+              <input id="is-recurring" type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} />
+              <label htmlFor="is-recurring" className="text-sm">Recorrente</label>
+            </div>
+            {isRecurring && (
+              <div className="mt-2 grid grid-cols-1 gap-2">
+                <p className="text-xs text-muted-foreground">A cobrança será gerada mensalmente no dia selecionado.</p>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm">Dia do pagamento</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={28}
+                    value={String(recurrenceDay)}
+                    onChange={(e) => setRecurrenceDay(Math.max(1, Math.min(28, Number(e.target.value) || 1)))}
+                    className="w-24"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 justify-end mt-4">

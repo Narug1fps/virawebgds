@@ -93,6 +93,130 @@ export async function POST(request: NextRequest) {
         return new Response(reply)
       }
 
+      // Quantos agendamentos por profissional (ou de um profissional específico)
+      if (/agendamentos.*por profissional|de cada profissional|por profissional/.test(userText) || /quantos.*agendamentos.*profissional/.test(userText)) {
+        // detect period
+        let period: "day" | "week" | "month" = "week"
+        if (/hoje|dia|no dia/.test(userText)) period = "day"
+        if (/semana|esta semana|essa semana/.test(userText)) period = "week"
+        if (/m(e|ê)s|mes|este m(e|ê)s|este mês|mês/.test(userText)) period = "month"
+
+        const ref = new Date()
+        let start: Date = new Date()
+        let end: Date = new Date()
+
+        if (period === "day") {
+          start.setHours(0, 0, 0, 0)
+          end.setHours(23, 59, 59, 999)
+        } else if (period === "week") {
+          const d = new Date(ref)
+          const day = d.getDay()
+          const diff = (day + 6) % 7
+          start = new Date(d)
+          start.setDate(d.getDate() - diff)
+          start.setHours(0, 0, 0, 0)
+          end = new Date(start)
+          end.setDate(start.getDate() + 6)
+          end.setHours(23, 59, 59, 999)
+        } else {
+          start = new Date(ref.getFullYear(), ref.getMonth(), 1)
+          end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0)
+          end.setHours(23, 59, 59, 999)
+        }
+
+        const startISO = start.toISOString().split("T")[0]
+        const endISO = end.toISOString().split("T")[0]
+
+        const { data: rows, error: rowsErr } = await supabase
+          .from("appointments")
+          .select("professional_id")
+          .eq("user_id", userId)
+          .gte("appointment_date", startISO)
+          .lte("appointment_date", endISO)
+
+        if (rowsErr) throw rowsErr
+
+        const map: Record<string, number> = {}
+        ;(rows || []).forEach((r: any) => {
+          const k = r.professional_id || "unknown"
+          map[k] = (map[k] || 0) + 1
+        })
+
+        const ids = Object.keys(map).filter((id) => id !== "unknown")
+        let namesMap: Record<string, string> = {}
+        if (ids.length > 0) {
+          const { data: pros } = await supabase.from("professionals").select("id,name").in("id", ids)
+          ;(pros || []).forEach((p: any) => (namesMap[p.id] = p.name))
+        }
+
+        if (Object.keys(map).length === 0) return new Response("Nenhum agendamento encontrado no período solicitado.")
+
+        const lines = Object.keys(map).map((k) => `${namesMap[k] || "Desconhecido"}: ${map[k]} agendamento(s)`).join("\n")
+        return new Response(`Agendamentos por profissional (${period}):\n${lines}`)
+      }
+
+      // Quantos agendamentos de um profissional específico
+      const profMatch = userText.match(/quantos?.*agendamentos.*(?:do|da|de)\s+([a-zçãõáéíóú\-\s]{2,80})/)
+      if (profMatch) {
+        const name = profMatch[1].trim()
+        // determine period from text
+        let period: "day" | "week" | "month" = "week"
+        if (/hoje|dia|no dia/.test(userText)) period = "day"
+        if (/semana|esta semana|essa semana/.test(userText)) period = "week"
+        if (/m(e|ê)s|mes|este m(e|ê)s|este mês|mês/.test(userText)) period = "month"
+
+        const ref = new Date()
+        let start: Date = new Date()
+        let end: Date = new Date()
+
+        if (period === "day") {
+          start.setHours(0, 0, 0, 0)
+          end.setHours(23, 59, 59, 999)
+        } else if (period === "week") {
+          const d = new Date(ref)
+          const day = d.getDay()
+          const diff = (day + 6) % 7
+          start = new Date(d)
+          start.setDate(d.getDate() - diff)
+          start.setHours(0, 0, 0, 0)
+          end = new Date(start)
+          end.setDate(start.getDate() + 6)
+          end.setHours(23, 59, 59, 999)
+        } else {
+          start = new Date(ref.getFullYear(), ref.getMonth(), 1)
+          end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0)
+          end.setHours(23, 59, 59, 999)
+        }
+
+        const startISO = start.toISOString().split("T")[0]
+        const endISO = end.toISOString().split("T")[0]
+
+        // find professional
+        const { data: profs } = await supabase
+          .from("professionals")
+          .select("id,name")
+          .ilike("name", `%${name}%`)
+          .eq("user_id", userId)
+          .limit(1)
+
+        if (!profs || profs.length === 0) return new Response(`Não encontrei profissional com nome parecido com "${name}".`)
+
+        const prof = profs[0]
+
+        const { data: rows2, error: rows2Err } = await supabase
+          .from("appointments")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("professional_id", prof.id)
+          .gte("appointment_date", startISO)
+          .lte("appointment_date", endISO)
+
+        if (rows2Err) throw rows2Err
+
+        const count = (rows2 || []).length
+        return new Response(`Profissional ${prof.name} tem ${count} agendamento(s) no período (${period}).`)
+      }
+
       if (/próximos agendamentos|proximos agendamentos|próximo agendamento|agendamentos próximos|agendamentos futuros/.test(userText)) {
         const today = new Date().toISOString().split("T")[0]
         const { data, error } = await supabase
