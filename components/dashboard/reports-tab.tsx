@@ -127,7 +127,7 @@ export default function ReportsTab() {
             <Users className="h-5 w-5 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.activePatients}</div>
+            <div className="text-3xl text-emerald-500 font-bold">{stats.activePatients}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Atualmente cadastrados
             </p>
