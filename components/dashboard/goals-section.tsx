@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Target, TrendingUp, Calendar, Edit, Trash2, CheckCircle2 } from "lucide-react"
 import { getGoals, createGoal, updateGoal, deleteGoal, type Goal } from "@/app/actions/goals"
 import { useToast } from "@/hooks/use-toast"
+import { formatDateString } from "@/lib/utils"
 
 export function GoalsSection() {
   const [goals, setGoals] = useState<Goal[]>([])
@@ -452,7 +453,7 @@ export function GoalsSection() {
                     {goal.deadline && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        {new Date(goal.deadline).toLocaleDateString("pt-BR")}
+                        {formatDateString(goal.deadline)}
                       </div>
                     )}
                   </div>

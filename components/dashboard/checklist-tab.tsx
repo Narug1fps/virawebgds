@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Loader2, Plus, Trash2 } from "lucide-react"
 import { getTodos, createTodo, updateTodo, toggleTodoComplete, deleteTodo, Todo } from "@/app/actions/todos"
 import { useToast } from "@/hooks/use-toast"
+import { formatDateString } from "@/lib/utils"
 
 export default function ChecklistTab() {
   const [todos, setTodos] = useState<Todo[]>([])
@@ -95,7 +96,7 @@ export default function ChecklistTab() {
                   <input type="checkbox" checked={t.completed} onChange={(e) => handleToggle(t.id, e.target.checked)} />
                   <div>
                     <div className={`font-medium ${t.completed ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
-                    <div className="text-sm text-muted-foreground">{t.due_date ? new Date(t.due_date).toLocaleDateString() : "Sem data"}</div>
+                    <div className="text-sm text-muted-foreground">{t.due_date ? formatDateString(t.due_date) : "Sem data"}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
