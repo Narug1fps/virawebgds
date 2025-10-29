@@ -107,8 +107,7 @@ export default function LandingPage({ onLoginClick, onSignupClick }: LandingPage
             </h2>
 
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-balance leading-relaxed">
-              Organize agendamentos, clientes, profissionais e relatórios em uma única plataforma. Perfeito para
-              clínicas, barbearias, escritórios de psicologia e muito mais.
+              Organize agendamentos, clientes, profissionais, financeiro, notas, checklist, metas e relatórios em uma única plataforma.
             </p>
 
             <div className="flex gap-4 justify-center flex-wrap">
