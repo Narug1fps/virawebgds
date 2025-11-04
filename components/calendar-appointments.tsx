@@ -42,8 +42,14 @@ export default function CalendarAppointments() {
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split("T")[0])
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  })
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  })
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -441,7 +447,8 @@ export default function CalendarAppointments() {
               const dateStr = day ? formatDate(currentDate.getFullYear(), currentDate.getMonth(), day) : null
               const dayAppointments = dateStr ? getAppointmentsForDate(dateStr) : []
               const isSelected = dateStr === selectedDate
-              const isToday = dateStr === new Date().toISOString().split("T")[0]
+              const now = new Date()
+              const isToday = dateStr === formatDate(now.getFullYear(), now.getMonth(), now.getDate())
 
               if (!day) {
                 return <div key={index} className="w-10 h-10" />

@@ -181,7 +181,7 @@ export function WeeklyView({
                         <div
                           key={apt.id}
                           className={
-                            `rounded-xl p-3 mb-2 shadow  flex flex-col gap-2 w-full min-w-0 ` +
+                            `rounded-xl p-3 mb-2 shadow  flex flex-col gap-2 w-full md:h-full h-10 min-w-0 ` +
                             (theme === 'dark' ? 'bg-primary  text-white' : 'bg-primary  text-white')
                           }
                         >
@@ -190,7 +190,7 @@ export function WeeklyView({
                               {professionals.find(p => p.id === apt.professional_id)?.name || 'Paciente'}
                             </span>
                           </div>
-                          <div className={`text-xs md:text-sm mb-1 ${theme === 'dark' ? 'text-white' : 'text-white'}`}>
+                          <div className={`text-xs md:block hidden md:text-sm mb-1 ${theme === 'dark' ? 'text-white' : 'text-white'}`}>
                             {apt.appointment_time} - {apt.notes || 'Sem descrição'} ({apt.duration_minutes} min)
                           </div>
                          
