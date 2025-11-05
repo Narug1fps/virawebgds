@@ -25,6 +25,30 @@ export default function RootLayout({
     <html lang="pt-BR">
       <link rel="shortcut icon" href="/viraweb6.ico" type="image/x-icon" />
       <body className={`font-sans antialiased selection:bg-primary selection:text-white`}>
+        {/*
+          Inline script to set the initial theme class on the <html> element
+          before React hydrates. This prevents a hydration mismatch where the
+          client mutates document.documentElement (next-themes) and the server
+          render didn't include the class.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var theme = localStorage.getItem('theme');
+              var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+              if (theme === 'dark' || (theme === null && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.style.colorScheme = 'dark';
+              } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.style.colorScheme = 'light';
+              }
+            } catch (e) {
+              // silent
+            }
+          })();
+        ` }} />
+
         <ThemeProvider>
           {children}
           <ThemeSettings />

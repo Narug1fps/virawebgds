@@ -14,6 +14,7 @@ import {
   Plus,
   Cake,
   Briefcase,
+  PlayCircle,
 } from "lucide-react"
 import {
   getDashboardStats,
@@ -21,6 +22,7 @@ import {
   getRecentPatients,
   getTodayBirthdays,
 } from "@/app/actions/dashboard"
+import { createClient } from "@/lib/supabase-client"
 
 interface OverviewTabProps {
   user: { email: string; name: string }
@@ -38,6 +40,8 @@ export default function OverviewTab({ user, onNavigate }: OverviewTabProps) {
   const [recentPatients, setRecentPatients] = useState<any[]>([])
   const [birthdays, setBirthdays] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasWatchedTutorial, setHasWatchedTutorial] = useState(true)
+  const supabase = createClient()
 
 
 
@@ -50,6 +54,18 @@ export default function OverviewTab({ user, onNavigate }: OverviewTabProps) {
           getRecentPatients(),
           getTodayBirthdays(),
         ])
+
+        // Carregar status do tutorial
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+        if (currentUser) {
+          const { data: tutorialData } = await supabase
+            .from('user_settings')
+            .select('has_watched_tutorial')
+            .eq('user_id', currentUser.id)
+            .single()
+          setHasWatchedTutorial(tutorialData?.has_watched_tutorial || false)
+        }
+
         setStats(statsData)
         setUpcomingAppointments(appointmentsData)
         setRecentPatients(patientsData)
@@ -109,6 +125,27 @@ export default function OverviewTab({ user, onNavigate }: OverviewTabProps) {
         </h1>
         <p className="text-muted-foreground">Aqui está um resumo do seu dia na clínica/empresa</p>
       </div>
+
+      {/* Tutorial Notification */}
+      {!hasWatchedTutorial && (
+        <Card className="p-6 border-primary/20 bg-gradient-to-r from-primary/5 to-background">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-full bg-primary/10">
+              <PlayCircle className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-foreground mb-2">Novo por aqui?</h3>
+              <p className="text-muted-foreground mb-4">
+                Assista ao nosso tutorial para aprender a usar todas as funcionalidades da plataforma.
+              </p>
+              <Button onClick={() => onNavigate("tutorial")} variant="outline" className="gap-2">
+                <PlayCircle className="w-4 h-4" />
+                Assistir Tutorial
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card className="p-6 border border-border bg-card">
         <div className="flex items-start gap-4">

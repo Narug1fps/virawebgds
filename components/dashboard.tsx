@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   LogOut,
@@ -19,6 +19,8 @@ import {
   Settings,
   HeadphonesIcon,
   StickyNote,
+  PlayCircle,
+  AlertCircle,
 } from "lucide-react"
 import ChecklistTab from "./dashboard/checklist-tab"
 import OverviewTab from "./dashboard/overview-tab"
@@ -33,8 +35,11 @@ import { GoalsSection } from "./dashboard/goals-section"
 import SettingsTab from "./dashboard/settings-tab"
 import SupportTab from "./dashboard/support-tab"
 import NotesTab from "./dashboard/notes-tab"
+import TutorialTab from "./dashboard/tutorial-tab"
 import NotificationsPanel from "./notifications-panel"
+import TutorialModal from "./tutorial-modal"
 import Image from "next/image"
+import { createClient } from "@/lib/supabase-client"
 
 interface Subscription {
   id: string
@@ -58,16 +63,50 @@ interface DashboardProps {
   user: { email: string; name: string }
   onLogout: () => void
   subscription?: Subscription
+  isNewUser?: boolean
 }
 
-export default function Dashboard({ user, onLogout, subscription }: DashboardProps) {
+export default function Dashboard({ user, onLogout, subscription, isNewUser = false }: DashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
+  const [showTutorial, setShowTutorial] = useState(isNewUser)
+  const [hasWatchedTutorial, setHasWatchedTutorial] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadTutorialStatus()
+  }, [])
+
+  const loadTutorialStatus = async () => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) return
+
+      const { data } = await supabase
+        .from('user_settings')
+        .select('has_watched_tutorial')
+        .eq('user_id', currentUser.id)
+        .single()
+
+      setHasWatchedTutorial(data?.has_watched_tutorial || false)
+    } catch (error) {
+      console.error('Error loading tutorial status:', error)
+    }
+  }
 
   const navItems = [
-    { id: "overview", label: "Visão Geral", icon: <Home className="w-5 h-5" /> },
+    { 
+      id: "overview", 
+      label: "Visão Geral", 
+      icon: <Home className="w-5 h-5" />,
+      notification: !hasWatchedTutorial ? (
+        <div className="absolute -right-1 -top-1">
+          <AlertCircle className="w-4 h-4 text-primary animate-pulse" />
+        </div>
+      ) : null
+    },
     { id: "notes", label: "Notas", icon: <StickyNote className="w-5 h-5" /> },
-  { id: "checklist", label: "Checklist", icon: <List className="w-5 h-5" /> },
+    { id: "checklist", label: "Checklist", icon: <List className="w-5 h-5" /> },
     { id: "ai", label: "ViraBot IA", icon: <Sparkles className="w-5 h-5" /> },
     { id: "goals", label: "Metas", icon: <Target className="w-5 h-5" /> },
     { id: "appointments", label: "Agendamentos", icon: <Calendar className="w-5 h-5" /> },
@@ -77,11 +116,22 @@ export default function Dashboard({ user, onLogout, subscription }: DashboardPro
     { id: "reports", label: "Relatórios", icon: <BarChart3 className="w-5 h-5" /> },
     { id: "subscriptions", label: "Assinatura", icon: <CreditCard className="w-5 h-5" /> },
     { id: "support", label: "Suporte", icon: <HeadphonesIcon className="w-5 h-5" /> },
+    { 
+      id: "tutorial", 
+      label: "Tutorial", 
+      icon: <PlayCircle className="w-5 h-5" />,
+      notification: !hasWatchedTutorial ? (
+        <div className="absolute -right-1 -top-1">
+          <AlertCircle className="w-4 h-4 text-primary" />
+        </div>
+      ) : null
+    },
     { id: "settings", label: "Configurações", icon: <Settings className="w-5 h-5" /> },
   ]
 
   return (
     <div className="min-h-screen bg-background">
+      <TutorialModal open={showTutorial} onOpenChange={setShowTutorial} />
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-40 shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
@@ -125,16 +175,18 @@ export default function Dashboard({ user, onLogout, subscription }: DashboardPro
         >
           <nav className="p-4 space-y-2  h-[calc(100vh-73px)] overflow-y-auto">
             {navItems.map((item) => (
-              <NavItem
-                key={item.id}
-                icon={item.icon}
-                label={item.label}
-                active={activeTab === item.id}
-                onClick={() => {
-                  setActiveTab(item.id)
-                  setSidebarOpen(false)
-                }}
-              />
+              <div key={item.id} className="relative">
+                <NavItem
+                  icon={item.icon}
+                  label={item.label}
+                  active={activeTab === item.id}
+                  onClick={() => {
+                    setActiveTab(item.id)
+                    setSidebarOpen(false)
+                  }}
+                />
+                {item.notification}
+              </div>
             ))}
           </nav>
         </aside>
@@ -148,6 +200,7 @@ export default function Dashboard({ user, onLogout, subscription }: DashboardPro
               {activeTab === "checklist" && <ChecklistTab />}
               {activeTab === "ai" && <AISection planType={subscription?.plan_type || "basic"} />}
               {activeTab === "goals" && <GoalsSection />}
+              {activeTab === "tutorial" && <TutorialTab />}
               {activeTab === "appointments" && <AppointmentsTab />}
               {activeTab === "patients" && <PatientsTab />}
               {activeTab === "financial" && <FinancialTab />}

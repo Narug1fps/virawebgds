@@ -125,3 +125,101 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* DayPicker overrides: make day cells circular and remove default focus ring
+   so clicking a day only changes its color (uses --primary). */
+/* Scoped DayPicker overrides for the financial attendance tab.
+   Targets only DayPicker instances with the .attendance-daypicker class to
+   avoid affecting other calendars. These rules:
+   - make day cells circular
+   - remove the global outline/box-shadow that was creating a purple square
+   - set the selected day's background to --primary
+   - keep scheduled days as circular rings */
+.attendance-daypicker .rdp-day {
+  border-radius: 9999px;
+}
+
+.attendance-daypicker .rdp-day:focus,
+.attendance-daypicker .rdp-day:active,
+.attendance-daypicker .rdp-day:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.attendance-daypicker .rdp-day_selected,
+.attendance-daypicker .rdp-day_selected:focus,
+.attendance-daypicker .rdp-day_selected:active,
+.attendance-daypicker .rdp-day_selected:focus-visible {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 9999px !important;
+}
+
+/* Make scheduled days show as circular rings (keep existing border but circular) */
+.attendance-daypicker .rdp-day.scheduled {
+  border-radius: 9999px;
+  border: 2px solid var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+/* In case the global rule applied an outline on wrappers, disable it inside this scope */
+.attendance-daypicker * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Stronger overrides to remove any border/outline applied globally to wrappers
+   (the project adds outlines via utilities). We explicitly remove borders and
+   outlines from DayPicker wrappers so only the circular day visuals remain. */
+.attendance-daypicker,
+.attendance-daypicker .rdp,
+.attendance-daypicker .rdp-root,
+.attendance-daypicker .rdp-wrapper,
+.attendance-daypicker .rdp-week,
+.attendance-daypicker .rdp-row,
+.attendance-daypicker .rdp-button {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Ensure cells themselves don't keep a rect border; give them only a circular
+   style. Some browsers draw ::before/::after for focus — hide those too. */
+.attendance-daypicker .rdp-day,
+.attendance-daypicker .rdp-day_wrapper,
+.attendance-daypicker .rdp-day_button {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 9999px !important;
+}
+
+/* Selected day: filled circle */
+.attendance-daypicker .rdp-day_selected,
+.attendance-daypicker .rdp-day_selected:focus-visible {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Scheduled days: circular ring only when not selected */
+.attendance-daypicker .rdp-day.scheduled:not(.rdp-day_selected) {
+  background: transparent !important;
+  border-radius: 9999px !important;
+  border: 2px solid var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+/* Remove focus rectangle added by browser on button containers */
+.attendance-daypicker button:focus,
+.attendance-daypicker button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+

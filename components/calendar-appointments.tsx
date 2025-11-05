@@ -131,6 +131,19 @@ export default function CalendarAppointments() {
 
   const handleDayClick = (day: number) => {
     const dateStr = formatDate(currentDate.getFullYear(), currentDate.getMonth(), day)
+
+    // If the user clicks the already-selected day, force a state change so
+    // the UI updates again (useful after opening/closing a modal or form where
+    // the selected date didn't change). We briefly clear the selection and
+    // then reset it on the next tick to trigger re-rendering logic that
+    // depends on `selectedDate`.
+    if (dateStr === selectedDate) {
+      setSelectedDate("")
+      // next tick, restore the date to trigger components that watch selectedDate
+      setTimeout(() => setSelectedDate(dateStr), 0)
+      return
+    }
+
     setSelectedDate(dateStr)
   }
 

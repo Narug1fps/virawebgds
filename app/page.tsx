@@ -43,6 +43,7 @@ export default function Home() {
   const { subscription, loading: subLoading } = useSubscription(user?.id || null)
   const [currentPage, setCurrentPage] = useState<"landing" | "login" | "signup" | "onboarding" | "dashboard">("landing")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isNewUser, setIsNewUser] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -95,6 +96,7 @@ export default function Home() {
           variant: "destructive",
         })
       } else {
+        setIsNewUser(true)
         toast({
           title: "Conta criada com sucesso!",
           description: "Verifique seu email para confirmar sua conta",
@@ -185,6 +187,7 @@ export default function Home() {
           }}
           onLogout={handleLogout}
           subscription={subscription}
+          isNewUser={isNewUser}
         />
       )}
     </main>
