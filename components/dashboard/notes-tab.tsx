@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2, Edit2, Save, X, Loader2, StickyNote } from "lucide-react"
 import { getUserNotes, createUserNote, updateUserNote, deleteUserNote, type UserNote } from "@/app/actions/user-notes"
+import { ToastAction } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast"
 
 export default function NotesTab() {
@@ -19,6 +20,7 @@ export default function NotesTab() {
     content: "",
   })
   const { toast } = useToast()
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadNotes()
@@ -49,6 +51,7 @@ export default function NotesTab() {
       return
     }
 
+    setSaving(true)
     try {
       if (editingId) {
         await updateUserNote(editingId, formData.title, formData.content)
@@ -74,6 +77,8 @@ export default function NotesTab() {
         description: error instanceof Error ? error.message : "Tente novamente",
         variant: "destructive",
       })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -87,22 +92,39 @@ export default function NotesTab() {
   }
 
   const handleDeleteNote = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta nota?")) return
-
-    try {
-      await deleteUserNote(id)
-      toast({
-        title: "Nota excluída",
-        description: "Nota removida com sucesso",
-      })
-      await loadNotes()
-    } catch (error) {
-      toast({
-        title: "Erro ao excluir nota",
-        description: error instanceof Error ? error.message : "Tente novamente",
-        variant: "destructive",
-      })
-    }
+    // Show a toast confirmation instead of native confirm dialog
+    const t = toast({
+      title: "Confirmar exclusão?",
+      description: "Clique em Excluir para confirmar ou feche esta notificação para cancelar.",
+      // action must be a ToastAction element
+      action: (
+        <ToastAction
+          altText="Confirmar exclusão"
+          onClick={async () => {
+            try {
+              // show temporary feedback (include id to satisfy type)
+              t.update({ id: t.id, title: "Excluindo...", description: "Aguarde" } as any)
+              await deleteUserNote(id)
+              t.update({ id: t.id, title: "Nota excluída", description: "Nota removida com sucesso" } as any)
+              // refresh list
+              await loadNotes()
+              // dismiss after short delay
+              setTimeout(() => t.dismiss(), 1500)
+            } catch (error) {
+              t.update({
+                id: t.id,
+                title: "Erro ao excluir nota",
+                description: error instanceof Error ? error.message : "Tente novamente",
+                // mark as destructive
+                variant: "destructive",
+              } as any)
+            }
+          }}
+        >
+          Excluir
+        </ToastAction>
+      ),
+    })
   }
 
   if (loading) {
@@ -153,9 +175,13 @@ export default function NotesTab() {
             />
           </div>
           <div className="flex gap-2 mt-4">
-            <Button onClick={handleSaveNote} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-              <Save className="w-4 h-4" />
-              {editingId ? "Atualizar" : "Salvar"}
+            <Button
+              onClick={handleSaveNote}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {editingId ? (saving ? "Atualizando..." : "Atualizar") : saving ? "Salvando..." : "Salvar"}
             </Button>
             <Button
               variant="outline"
