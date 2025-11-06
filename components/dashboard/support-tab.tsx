@@ -7,15 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Mail, Clock, CheckCircle2, AlertCircle, Loader2, Send, Sparkles, ExternalLink } from "lucide-react"
-import {
-  getSupportTickets,
-  createSupportTicket,
-  getTicketMessages,
-  addTicketMessage,
-  type SupportTicket,
-  type SupportMessage,
-} from "@/app/actions/support"
-import { getCurrentPlan } from "@/app/actions/subscription"
+import { createClient } from "@/lib/supabase-client"
+import type { SupportTicket, SupportMessage } from "@/app/actions/support"
 import { hasViraBotAccess, PLAN_LIMITS, getSupportChannels } from "@/lib/plan-limits"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -39,6 +32,7 @@ export default function SupportTab() {
   const [showAIChat, setShowAIChat] = useState(false)
   const [hasAIAccess, setHasAIAccess] = useState(false)
   const { toast } = useToast()
+  const supabase = createClient()
 
   useEffect(() => {
     loadData()
@@ -46,12 +40,25 @@ export default function SupportTab() {
 
   const loadData = async () => {
     try {
-      const [ticketsData, plan] = await Promise.all([getSupportTickets(), getCurrentPlan()])
+      // Fetch current user and then tickets & subscription using browser client
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr || !user) throw new Error("Usuário não autenticado")
 
-      console.log(" Support tickets loaded:", ticketsData)
-      console.log(" Current plan:", plan)
+      const [{ data: ticketsData, error: ticketsErr }, { data: subscriptionData, error: subErr }] = await Promise.all([
+        supabase.from("support_tickets").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("subscriptions").select("*").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }).limit(1).single(),
+      ])
 
-      setTickets(ticketsData)
+      if (ticketsErr) {
+        console.error('Error fetching support tickets (client):', ticketsErr)
+      }
+
+      const plan = (subscriptionData?.plan_name || subscriptionData?.plan_type || "basic").toLowerCase() as
+        | "basic"
+        | "premium"
+        | "master"
+
+      setTickets(ticketsData || [])
       setPlanType(plan)
       setSupportChannels(getSupportChannels(plan))
       setHasAIAccess(hasViraBotAccess(plan))
@@ -77,7 +84,23 @@ export default function SupportTab() {
     }
 
     try {
-      await createSupportTicket(formData.subject, formData.message, formData.priority)
+      // create ticket via browser client
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr || !user) throw new Error("Usuário não autenticado")
+
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .insert({
+          user_id: user.id,
+          subject: formData.subject,
+          message: formData.message,
+          priority: formData.priority,
+          status: "open",
+        })
+        .select()
+        .single()
+
+      if (error) throw error
       toast({
         title: "Ticket criado",
         description: "Seu ticket de suporte foi criado e enviado para nossa equipe",
@@ -97,8 +120,14 @@ export default function SupportTab() {
   const handleViewTicket = async (ticket: SupportTicket) => {
     setSelectedTicket(ticket)
     try {
-      const messagesData = await getTicketMessages(ticket.id)
-      setMessages(messagesData)
+      const { data, error } = await supabase
+        .from("support_messages")
+        .select("*")
+        .eq("ticket_id", ticket.id)
+        .order("created_at", { ascending: true })
+
+      if (error) throw error
+      setMessages(data || [])
     } catch (error) {
       toast({
         title: "Erro ao carregar mensagens",
@@ -112,9 +141,30 @@ export default function SupportTab() {
     if (!selectedTicket || !newMessage.trim()) return
 
     try {
-      await addTicketMessage(selectedTicket.id, newMessage)
-      const messagesData = await getTicketMessages(selectedTicket.id)
-      setMessages(messagesData)
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr || !user) throw new Error("Usuário não autenticado")
+
+      const { data, error } = await supabase
+        .from("support_messages")
+        .insert({
+          ticket_id: selectedTicket.id,
+          user_id: user.id,
+          message: newMessage,
+          is_staff: false,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      const { data: messagesData, error: messagesErr } = await supabase
+        .from("support_messages")
+        .select("*")
+        .eq("ticket_id", selectedTicket.id)
+        .order("created_at", { ascending: true })
+
+      if (messagesErr) console.error('Error refetching messages:', messagesErr)
+      setMessages(messagesData || [])
       setNewMessage("")
       toast({
         title: "Mensagem enviada",
@@ -347,7 +397,7 @@ export default function SupportTab() {
       </Card>
 
       {/* Tickets (Em breve) */}
-      <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-primary/20">
+  <Card className="p-6 text-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-2 border-primary/20 dark:border-primary/30">
         <h3 className="text-lg font-bold text-foreground mb-4">Sistema de Tickets</h3>
         <div className="py-12">
           <Sparkles className="w-16 h-16 text-primary mx-auto mb-6 animate-pulse" />
