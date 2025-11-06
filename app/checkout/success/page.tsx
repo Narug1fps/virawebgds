@@ -70,7 +70,7 @@ export default function CheckoutSuccessPage() {
               <CheckCircle2 className="w-16 h-16 text-green-500" />
               <p className="text-lg font-semibold text-foreground">Sua assinatura foi ativada com sucesso!</p>
               <p className="text-muted-foreground">Você será redirecionado para o dashboard em instantes...</p>
-              <Button onClick={() => router.push("/dashboard")} className="mt-4">
+              <Button onClick={() => router.push("/")} className="mt-4">
                 Ir para o Dashboard
               </Button>
             </div>

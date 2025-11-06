@@ -200,7 +200,9 @@ export default function Dashboard({ user, onLogout, subscription, isNewUser = fa
               {activeTab === "checklist" && <ChecklistTab />}
               {activeTab === "ai" && <AISection planType={subscription?.plan_type || "basic"} />}
               {activeTab === "goals" && <GoalsSection />}
-              {activeTab === "tutorial" && <TutorialTab />}
+              {activeTab === "tutorial" && (
+                <TutorialTab onMarkWatched={() => setHasWatchedTutorial(true)} />
+              )}
               {activeTab === "appointments" && <AppointmentsTab />}
               {activeTab === "patients" && <PatientsTab />}
               {activeTab === "financial" && <FinancialTab />}

@@ -7,7 +7,7 @@ import { PlayCircle, CheckCircle2, AlertCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase-client"
 import { useToast } from "@/hooks/use-toast"
 
-export default function TutorialTab() {
+export default function TutorialTab({ onMarkWatched }: { onMarkWatched?: () => void }) {
   const [hasWatchedTutorial, setHasWatchedTutorial] = useState(false)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
@@ -39,29 +39,52 @@ export default function TutorialTab() {
 
   const markTutorialAsWatched = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError) {
+        console.error('Error getting supabase user before marking tutorial:', userError)
+        throw userError
+      }
 
-      const { error } = await supabase
+      if (!user) {
+        console.warn('No authenticated user found when marking tutorial as watched')
+        throw new Error('Usuário não autenticado')
+      }
+
+      // Use upsert with onConflict and request the updated row back so we
+      // can inspect any returned data/errors and provide clearer logs.
+      const upsertRes: any = await supabase
         .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          has_watched_tutorial: true
-        })
+        .upsert([
+          {
+            user_id: user.id,
+            has_watched_tutorial: true,
+          },
+        ], { onConflict: 'user_id' })
+        .select()
+        .single()
 
-      if (error) throw error
+      if (upsertRes.error) {
+        // Log the full error object returned by Supabase for diagnosis
+        console.error('Supabase upsert error for user_settings:', upsertRes.error, upsertRes)
+        throw upsertRes.error
+      }
 
+      // Success
       setHasWatchedTutorial(true)
+      // Notify parent (Dashboard) so it can remove the notification badge
+      if (onMarkWatched) onMarkWatched()
       toast({
-        title: "Tutorial concluído!",
-        description: "Obrigado por assistir ao tutorial.",
+        title: 'Tutorial concluído!',
+        description: 'Obrigado por assistir ao tutorial.',
       })
-    } catch (error) {
-      console.error('Error marking tutorial as watched:', error)
+    } catch (err: any) {
+      // Provide more detailed message when available
+      console.error('Error marking tutorial as watched:', err)
+      const message = err?.message || (err?.error_description ?? 'Por favor, tente novamente.')
       toast({
-        title: "Erro ao marcar tutorial como visto",
-        description: "Por favor, tente novamente.",
-        variant: "destructive"
+        title: 'Erro ao marcar tutorial como visto',
+        description: message,
+        variant: 'destructive',
       })
     }
   }
