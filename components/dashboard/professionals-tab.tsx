@@ -13,6 +13,7 @@ import {
   type Professional as ProfessionalType,
 } from "@/app/actions/professionals"
 import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import PlanLimitBanner from "@/components/plan-limit-banner"
 import { useRouter } from "next/navigation"
 import UpgradeModal from "@/components/upgrade-modal"
@@ -39,6 +40,7 @@ export default function ProfessionalsTab() {
     notes: "",
   })
   const { toast } = useToast()
+  const [saving, setSaving] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function ProfessionalsTab() {
   }
 
   const handleAddProfessional = async () => {
+    setSaving(true)
     if (!formData.name) {
       toast({
         title: "Nome obrigatório",
@@ -122,6 +125,9 @@ export default function ProfessionalsTab() {
         })
       }
     }
+    finally{
+      setSaving(false)
+    }
   }
 
   const handleEditProfessional = (professional: Professional) => {
@@ -138,22 +144,33 @@ export default function ProfessionalsTab() {
   }
 
   const handleDeleteProfessional = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este profissional?")) return
-
-    try {
-      await deleteProfessional(id)
-      toast({
-        title: "Profissional excluído",
-        description: "Profissional removido com sucesso",
-      })
-      await loadProfessionals()
-    } catch (error) {
-      toast({
-        title: "Erro ao excluir profissional",
-        description: error instanceof Error ? error.message : "Tente novamente",
-        variant: "destructive",
-      })
-    }
+    const t = toast({
+      title: "Confirmar exclusão?",
+      description: "Clique em Excluir para confirmar ou feche esta notificação para cancelar.",
+      action: (
+        <ToastAction
+          altText="Confirmar exclusão"
+          onClick={async () => {
+            try {
+              t.update({ id: t.id, title: "Excluindo...", description: "Aguarde" } as any)
+              await deleteProfessional(id)
+              t.update({ id: t.id, title: "Profissional excluído", description: "Profissional removido com sucesso" } as any)
+              await loadProfessionals()
+              setTimeout(() => t.dismiss(), 1500)
+            } catch (error) {
+              t.update({
+                id: t.id,
+                title: "Erro ao excluir profissional",
+                description: error instanceof Error ? error.message : "Tente novamente",
+                variant: "destructive",
+              } as any)
+            }
+          }}
+        >
+          Excluir
+        </ToastAction>
+      ),
+    })
   }
 
   const filteredProfessionals = professionals.filter((professional) => {

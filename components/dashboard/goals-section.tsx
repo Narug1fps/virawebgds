@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Target, TrendingUp, Calendar, Edit, Trash2, CheckCircle2 } from "lucide-react"
 import { getGoals, createGoal, updateGoal, deleteGoal, type Goal } from "@/app/actions/goals"
 import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import { formatDateString } from "@/lib/utils"
 
 export function GoalsSection() {
@@ -131,22 +132,33 @@ export function GoalsSection() {
   }
 
   async function handleDelete(goalId: string) {
-    if (!confirm("Tem certeza que deseja excluir esta meta?")) return
-
-    try {
-      await deleteGoal(goalId)
-      toast({
-        title: "Meta excluída",
-        description: "A meta foi removida com sucesso.",
-      })
-      await loadGoals()
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir a meta",
-        variant: "destructive",
-      })
-    }
+    const t = toast({
+      title: "Confirmar exclusão?",
+      description: "Clique em Excluir para confirmar ou feche esta notificação para cancelar.",
+      action: (
+        <ToastAction
+          altText="Confirmar exclusão"
+          onClick={async () => {
+            try {
+              t.update({ id: t.id, title: "Excluindo...", description: "Aguarde" } as any)
+              await deleteGoal(goalId)
+              t.update({ id: t.id, title: "Meta excluída", description: "A meta foi removida com sucesso." } as any)
+              await loadGoals()
+              setTimeout(() => t.dismiss(), 1500)
+            } catch (error) {
+              t.update({
+                id: t.id,
+                title: "Erro",
+                description: "Não foi possível excluir a meta",
+                variant: "destructive",
+              } as any)
+            }
+          }}
+        >
+          Excluir
+        </ToastAction>
+      ),
+    })
   }
 
   async function handleComplete(goal: Goal) {
@@ -239,9 +251,6 @@ export function GoalsSection() {
               </Button>
             </DialogTrigger>
 
-            <Button onClick={createAppointmentGoal} className="gap-2" variant="ghost">
-              Criar meta de agendamentos (100)
-            </Button>
           </div>
           <DialogContent className="max-w-2xl">
             <DialogHeader>

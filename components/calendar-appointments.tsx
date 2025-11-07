@@ -18,6 +18,7 @@ import {
 import { getPatients } from "@/app/actions/patients"
 import { getProfessionals } from "@/app/actions/professionals"
 import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 
 interface Appointment {
   id: string
@@ -202,20 +203,33 @@ export default function CalendarAppointments() {
   }
 
   const handleDeleteAppointment = async (id: string) => {
-    try {
-      await deleteAppointment(id)
-      setAppointments(appointments.filter((a) => a.id !== id))
-      toast({
-        title: "Agendamento excluído",
-        description: "O agendamento foi excluído com sucesso",
-      })
-    } catch (error) {
-      toast({
-        title: "Erro ao excluir agendamento",
-        description: error instanceof Error ? error.message : "Tente novamente",
-        variant: "destructive",
-      })
-    }
+    const t = toast({
+      title: "Confirmar exclusão?",
+      description: "Clique em Excluir para confirmar ou feche esta notificação para cancelar.",
+      action: (
+        <ToastAction
+          altText="Confirmar exclusão"
+          onClick={async () => {
+            try {
+              t.update({ id: t.id, title: "Excluindo...", description: "Aguarde" } as any)
+              await deleteAppointment(id)
+              setAppointments(appointments.filter((a) => a.id !== id))
+              t.update({ id: t.id, title: "Agendamento excluído", description: "O agendamento foi excluído com sucesso" } as any)
+              setTimeout(() => t.dismiss(), 1500)
+            } catch (error) {
+              t.update({
+                id: t.id,
+                title: "Erro ao excluir agendamento",
+                description: error instanceof Error ? error.message : "Tente novamente",
+                variant: "destructive",
+              } as any)
+            }
+          }}
+        >
+          Excluir
+        </ToastAction>
+      ),
+    })
   }
 
   const handleStatusChange = async (id: string, newStatus: string) => {

@@ -15,6 +15,7 @@ import {
   type Patient,
 } from "@/app/actions/patients"
 import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import { mapDbErrorToUserMessage } from "@/lib/error-messages"
 import PatientProfileModal from "@/components/patient-profile-modal"
 import PlanLimitBanner from "@/components/plan-limit-banner"
@@ -47,6 +48,7 @@ export default function PatientsTab() {
     notes: "",
   })
   const { toast } = useToast()
+  const [saving, setSaving] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -79,6 +81,7 @@ export default function PatientsTab() {
   }
 
   const handleAddPatient = async () => {
+    setSaving(true)
     if (!formData.name) {
       toast({
         title: "Nome obrigatório",
@@ -133,6 +136,9 @@ export default function PatientsTab() {
         })
       }
     }
+    finally{
+      setSaving(false)
+    }
   }
 
   const handleEditPatient = (patient: Patient) => {
@@ -151,22 +157,33 @@ export default function PatientsTab() {
   }
 
   const handleDeletePatient = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) return
-
-    try {
-      await deletePatient(id)
-      toast({
-        title: "Cliente excluído",
-        description: "Cliente removido com sucesso",
-      })
-      await loadPatients()
-    } catch (error) {
-      toast({
-        title: "Erro ao excluir cliente",
-        description: error instanceof Error ? error.message : "Tente novamente",
-        variant: "destructive",
-      })
-    }
+    const t = toast({
+      title: "Confirmar exclusão?",
+      description: "Clique em Excluir para confirmar ou feche esta notificação para cancelar.",
+      action: (
+        <ToastAction
+          altText="Confirmar exclusão"
+          onClick={async () => {
+            try {
+              t.update({ id: t.id, title: "Excluindo...", description: "Aguarde" } as any)
+              await deletePatient(id)
+              t.update({ id: t.id, title: "Cliente excluído", description: "Cliente removido com sucesso" } as any)
+              await loadPatients()
+              setTimeout(() => t.dismiss(), 1500)
+            } catch (error) {
+              t.update({
+                id: t.id,
+                title: "Erro ao excluir cliente",
+                description: error instanceof Error ? error.message : "Tente novamente",
+                variant: "destructive",
+              } as any)
+            }
+          }}
+        >
+          Excluir
+        </ToastAction>
+      ),
+    })
   }
 
   const handleStatusChange = async (id: string, newStatus: "active" | "inactive") => {
