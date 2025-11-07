@@ -4,8 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import ThemeSettings from "@/components/dashboard/theme-settings"
+import { Providers } from "./providers"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -49,10 +48,9 @@ export default function RootLayout({
           })();
         ` }} />
 
-        <ThemeProvider>
+        <Providers>
           {children}
-          <ThemeSettings />
-        </ThemeProvider>
+        </Providers>
         <Toaster />
         <Analytics />
       </body>

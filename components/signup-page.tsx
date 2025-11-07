@@ -26,6 +26,28 @@ export default function SignupPage({ onSignup, onLoginClick, onBackClick, onGoog
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
+  const handleGoogleSuccess = async (credential: string) => {
+    try {
+      if (onGoogleSignIn) {
+        await onGoogleSignIn()
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao cadastrar com Google",
+        description: "Ocorreu um erro ao tentar cadastrar com o Google. Tente novamente.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleGoogleError = () => {
+    toast({
+      title: "Erro ao cadastrar com Google",
+      description: "Ocorreu um erro ao tentar cadastrar com o Google. Tente novamente.",
+      variant: "destructive",
+    })
+  }
+
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
     let strength = 0
@@ -231,7 +253,12 @@ export default function SignupPage({ onSignup, onLoginClick, onBackClick, onGoog
 
           <div className="mt-4 flex items-center justify-center">
             <div className="w-full max-w-xs">
-              <GoogleButton onClick={() => onGoogleSignIn && onGoogleSignIn()} variant="signup" />
+              <GoogleButton 
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                variant="signup"
+                isLoading={isLoading}
+              />
             </div>
           </div>
 
