@@ -6,15 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  async redirects() {
-    return [
-      {
-        source: '/reset-password/:path*',
-        destination: '/reset-password',
-        permanent: false,
-      },
-    ]
-  },
+  // removed redirect that caused potential redirect loops for reset-password
 }
 
 export default nextConfig
