@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { fetchJson } from "@/lib/fetch-client"
 
 type PlanType = "basic" | "premium" | "master"
 
@@ -18,19 +19,13 @@ export function useUpgradePlan() {
     })
 
     try {
-      const response = await fetch("/api/subscription/checkout", {
+      const data = await fetchJson("/api/subscription/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetPlan: newPlan }),
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create checkout session")
-      }
-
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url
       } else {
         throw new Error("No checkout URL received")

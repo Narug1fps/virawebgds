@@ -260,8 +260,15 @@ export default function ProfessionalsTab() {
             />
           </div>
           <div className="flex gap-2 mt-4">
-            <Button onClick={handleAddProfessional} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              {editingId ? "Atualizar" : "Salvar"}
+            <Button onClick={handleAddProfessional} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {editingId ? "Atualizando..." : "Salvando..."}
+                </>
+              ) : (
+                editingId ? "Atualizar" : "Salvar"
+              )}
             </Button>
             <Button
               variant="outline"

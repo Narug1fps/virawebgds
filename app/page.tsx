@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { useSubscription } from "@/hooks/use-subscription"
 import { useToast } from "@/hooks/use-toast"
+import { fetchJson } from "@/lib/fetch-client"
 import LandingPage from "@/components/landing-page"
 import LoginPage from "@/components/login-page"
 import SignupPage from "@/components/signup-page"
@@ -116,13 +117,11 @@ export default function Home() {
   const handleSelectPlan = async (plan: "basic" | "premium" | "master") => {
     setIsProcessing(true)
     try {
-      const response = await fetch("/api/subscriptions", {
+      await fetchJson("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_type: plan }),
       })
-
-      if (!response.ok) throw new Error("Failed to create subscription")
 
       toast({
         title: "Plano selecionado!",

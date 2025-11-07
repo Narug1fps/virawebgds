@@ -31,7 +31,7 @@ const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: "patient.name",
-    header: "Paciente",
+    header: "Cliente",
   },
   {
     accessorKey: "amount",
@@ -91,7 +91,7 @@ export function FinancialGrid({ data, loading, onPeriodChange, onSearch, onExpor
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Pesquisar paciente..."
+              placeholder="Pesquisar cliente..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)

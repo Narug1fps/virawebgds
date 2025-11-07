@@ -187,7 +187,7 @@ export function WeeklyView({
                         >
                           <div className="flex items-center justify-between mb-1 w-full">
                             <span className={`font-bold text-sm md:text-base ${theme === 'dark' ? 'text-white' : 'text-white'}` }>
-                              {professionals.find(p => p.id === apt.professional_id)?.name || 'Paciente'}
+                              {professionals.find(p => p.id === apt.professional_id)?.name || 'Cliente'}
                             </span>
                           </div>
                           <div className={`text-xs md:block hidden md:text-sm mb-1 ${theme === 'dark' ? 'text-white' : 'text-white'}`}>

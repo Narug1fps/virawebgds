@@ -21,7 +21,11 @@ export async function getTodos() {
     error: authError,
   } = await supabase.auth.getUser()
 
-  if (authError || !user) throw new Error("User not authenticated")
+  if (authError || !user) {
+    // Propagate real auth error message when available to help debugging
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
+  }
 
   const { data, error } = await supabase
     .from("todos")
@@ -31,7 +35,7 @@ export async function getTodos() {
 
   if (error) {
     console.error("Error fetching todos:", error)
-    throw new Error("Failed to fetch todos")
+    throw new Error(error.message || "Failed to fetch todos")
   }
 
   return (data || []) as Todo[]
@@ -55,7 +59,7 @@ export async function createTodo(payload: { title: string; description?: string;
 
   if (error) {
     console.error("Error creating todo:", error)
-    throw new Error("Failed to create todo")
+    throw new Error(error.message || "Failed to create todo")
   }
 
   return data as Todo
@@ -81,7 +85,7 @@ export async function updateTodo(id: string, payload: { title?: string; descript
 
   if (error) {
     console.error("Error updating todo:", error)
-    throw new Error("Failed to update todo")
+    throw new Error(error.message || "Failed to update todo")
   }
 
   return data as Todo
@@ -107,7 +111,7 @@ export async function toggleTodoComplete(id: string, completed: boolean) {
 
   if (error) {
     console.error("Error toggling todo:", error)
-    throw new Error("Failed to toggle todo")
+    throw new Error(error.message || "Failed to toggle todo")
   }
 
   return data as Todo
@@ -127,7 +131,7 @@ export async function deleteTodo(id: string) {
 
   if (error) {
     console.error("Error deleting todo:", error)
-    throw new Error("Failed to delete todo")
+    throw new Error(error.message || "Failed to delete todo")
   }
 
   return { success: true }

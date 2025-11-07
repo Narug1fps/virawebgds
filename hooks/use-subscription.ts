@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase-client"
+import { fetchJson } from "@/lib/fetch-client"
 
 interface Subscription {
   id: string
@@ -87,14 +88,12 @@ export function useSubscription(userId: string | null) {
 
   const createSubscription = async (planType: "basic" | "premium" | "master") => {
     try {
-      const response = await fetch("/api/subscriptions", {
+      const data = await fetchJson("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_type: planType }),
       })
 
-      if (!response.ok) throw new Error("Failed to create subscription")
-      const data = await response.json()
       setSubscription(data)
       return data
     } catch (err) {
@@ -108,14 +107,12 @@ export function useSubscription(userId: string | null) {
     if (!subscription) return
 
     try {
-      const response = await fetch("/api/subscriptions", {
+      const data = await fetchJson("/api/subscriptions", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: subscription.id, status: "canceled" }),
       })
 
-      if (!response.ok) throw new Error("Failed to cancel subscription")
-      const data = await response.json()
       setSubscription(data)
       return data
     } catch (err) {

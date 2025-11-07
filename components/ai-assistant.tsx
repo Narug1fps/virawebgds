@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Send, MessageCircle, X, Lock, Loader2 } from "lucide-react"
+import { fetchRaw } from "@/lib/fetch-client"
 
 interface Message {
   id: string
@@ -49,7 +50,7 @@ export default function AIAssistant({ isOpen = true, onClose, hasAccess = false 
     setError(null)
 
     try {
-      const response = await fetch("/api/ai/chat", {
+      const response = await fetchRaw("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -59,11 +60,6 @@ export default function AIAssistant({ isOpen = true, onClose, hasAccess = false 
           })),
         }),
       })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || "Failed to get response")
-      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),

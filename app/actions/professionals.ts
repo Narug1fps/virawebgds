@@ -30,7 +30,8 @@ export async function getProfessionals() {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -41,7 +42,7 @@ export async function getProfessionals() {
 
   if (error) {
     console.error(" Error fetching professionals:", error)
-    throw new Error("Failed to fetch professionals")
+    throw new Error(error.message || "Failed to fetch professionals")
   }
 
   return data as Professional[]
@@ -64,7 +65,8 @@ export async function createProfessional(professionalData: {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const subscription = await getUserSubscription()
@@ -91,7 +93,7 @@ export async function createProfessional(professionalData: {
 
   if (error) {
     console.error(" Error creating professional:", error)
-    throw new Error("Failed to create professional")
+    throw new Error(error.message || "Failed to create professional")
   }
 
   await createNotification("Profissional Adicionado", `${professionalData.name} foi adicionado com sucesso.`, "success")
@@ -122,7 +124,8 @@ export async function updateProfessional(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -141,7 +144,7 @@ export async function updateProfessional(
 
   if (error) {
     console.error(" Error updating professional:", error)
-    throw new Error("Failed to update professional")
+    throw new Error(error.message || "Failed to update professional")
   }
 
   await createNotification("Profissional Atualizado", `${professionalData.name} foi atualizado com sucesso.`, "info")
@@ -158,14 +161,15 @@ export async function deleteProfessional(professionalId: string) {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { error } = await supabase.from("professionals").delete().eq("id", professionalId).eq("user_id", user.id)
 
   if (error) {
     console.error(" Error deleting professional:", error)
-    throw new Error("Failed to delete professional")
+    throw new Error(error.message || "Failed to delete professional")
   }
 
   await createNotification("Profissional Removido", "Profissional foi removido com sucesso.", "info")
@@ -182,7 +186,8 @@ export async function updateProfessionalStatus(professionalId: string, status: s
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { error } = await supabase
@@ -193,7 +198,7 @@ export async function updateProfessionalStatus(professionalId: string, status: s
 
   if (error) {
     console.error(" Error updating professional status:", error)
-    throw new Error("Failed to update professional status")
+    throw new Error(error.message || "Failed to update professional status")
   }
 
   return { success: true }

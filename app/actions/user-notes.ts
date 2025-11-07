@@ -20,7 +20,8 @@ export async function getUserNotes(): Promise<UserNote[]> {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -31,7 +32,7 @@ export async function getUserNotes(): Promise<UserNote[]> {
 
   if (error) {
     console.error("Error fetching notes:", error)
-    throw new Error("Failed to fetch notes")
+    throw new Error(error.message || "Failed to fetch notes")
   }
 
   return data as UserNote[]
@@ -46,7 +47,8 @@ export async function createUserNote(title: string, content: string): Promise<Us
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -61,7 +63,7 @@ export async function createUserNote(title: string, content: string): Promise<Us
 
   if (error) {
     console.error("Error creating note:", error)
-    throw new Error("Failed to create note")
+    throw new Error(error.message || "Failed to create note")
   }
 
   return data as UserNote
@@ -76,7 +78,8 @@ export async function updateUserNote(id: string, title: string, content: string)
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -93,7 +96,7 @@ export async function updateUserNote(id: string, title: string, content: string)
 
   if (error) {
     console.error("Error updating note:", error)
-    throw new Error("Failed to update note")
+    throw new Error(error.message || "Failed to update note")
   }
 
   return data as UserNote
@@ -108,13 +111,14 @@ export async function deleteUserNote(id: string): Promise<void> {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { error } = await supabase.from("user_notes").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error deleting note:", error)
-    throw new Error("Failed to delete note")
+    throw new Error(error.message || "Failed to delete note")
   }
 }

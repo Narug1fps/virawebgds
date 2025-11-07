@@ -49,7 +49,8 @@ export async function getUserSubscription(): Promise<UserSubscription | null> {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("User not authenticated")
+    const msg = authError?.message || "User not authenticated"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -63,7 +64,7 @@ export async function getUserSubscription(): Promise<UserSubscription | null> {
 
   if (error && error.code !== "PGRST116") {
     console.error("Error fetching subscription:", error)
-    return null
+    throw new Error(error.message || "Error fetching subscription")
   }
 
   if (data) {
@@ -111,7 +112,7 @@ export async function updateSubscriptionStatus(subscriptionId: string, status: "
 
   if (error) {
     console.error("Error updating subscription:", error)
-    throw new Error("Failed to update subscription")
+    throw new Error(error.message || "Failed to update subscription")
   }
 
   revalidatePath("/dashboard")

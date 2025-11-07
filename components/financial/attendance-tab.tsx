@@ -7,7 +7,7 @@ import MonthlyCalendar from "./monthly-calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Check, Clock, XCircle, AlertTriangle } from "lucide-react"
+import { Check, Clock, XCircle, AlertTriangle, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import "react-day-picker/dist/style.css"
 import { format } from "date-fns"
@@ -29,6 +29,7 @@ export function AttendanceTab({ patientId }: AttendanceTabProps) {
   const [selectedPatient, setSelectedPatient] = useState<string | null>(patientId || null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [showDialog, setShowDialog] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [notes, setNotes] = useState("")
   const [status, setStatus] = useState<"present" | "absent" | "late" | "cancelled">("present")
   const [amount, setAmount] = useState<number>(0)
@@ -78,8 +79,8 @@ export function AttendanceTab({ patientId }: AttendanceTabProps) {
           setPatients(data || [])
         } catch (error) {
           toast({
-            title: "Erro ao carregar pacientes",
-            description: error instanceof Error ? error.message : "Falha ao carregar lista de pacientes",
+            title: "Erro ao carregar clientes",
+            description: error instanceof Error ? error.message : "Falha ao carregar lista de clientes",
             variant: "destructive"
           })
         }
@@ -154,7 +155,7 @@ export function AttendanceTab({ patientId }: AttendanceTabProps) {
 
   const handleSave = async () => {
     if (!selectedDate || !selectedPatient) return
-
+    setSaving(true)
     try {
       const data: any = {
         status,
@@ -185,6 +186,9 @@ export function AttendanceTab({ patientId }: AttendanceTabProps) {
         description: error instanceof Error ? error.message : "Falha ao salvar presença",
         variant: "destructive"
       })
+    }
+    finally {
+      setSaving(false)
     }
   }
 
@@ -227,8 +231,8 @@ export function AttendanceTab({ patientId }: AttendanceTabProps) {
               <h3 className="text-lg font-semibold">Controle de Presença</h3>
             </div>
             <Select value={selectedPatient || ""} onValueChange={setSelectedPatient}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione um paciente" />
+                <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione um cliente" />
               </SelectTrigger>
               <SelectContent>
                 {patients.map((patient) => (
@@ -400,7 +404,16 @@ export function AttendanceTab({ patientId }: AttendanceTabProps) {
             <Button variant="outline" onClick={() => { setShowDialog(false); setSelectedDate(undefined); }}>
               Cancelar
             </Button>
-            <Button onClick={handleSave}>Salvar</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

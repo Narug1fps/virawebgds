@@ -19,7 +19,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Target, TrendingUp, Calendar, Edit, Trash2, CheckCircle2 } from "lucide-react"
+import { Plus, Target, TrendingUp, Calendar, Edit, Trash2, CheckCircle2, Loader2 } from "lucide-react"
 import { getGoals, createGoal, updateGoal, deleteGoal, type Goal } from "@/app/actions/goals"
 import { useToast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
@@ -357,7 +357,14 @@ export function GoalsSection() {
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? "Salvando..." : editingGoal ? "Atualizar" : "Criar Meta"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {editingGoal ? "Atualizando..." : "Salvando..."}
+                    </>
+                  ) : (
+                    editingGoal ? "Atualizar" : "Criar Meta"
+                  )}
                 </Button>
               </div>
             </form>

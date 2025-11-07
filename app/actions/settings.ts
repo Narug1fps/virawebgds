@@ -22,14 +22,15 @@ export async function getUserSettings(): Promise<UserSettings | null> {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("Usuário não autenticado")
+    const msg = authError?.message || "Usuário não autenticado"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase.from("users").select("*").eq("id", user.id).single()
 
   if (error) {
     console.error("Erro ao buscar configurações:", error)
-    return null
+    throw new Error(error.message || "Erro ao buscar configurações")
   }
 
   return data as UserSettings
@@ -47,7 +48,8 @@ export async function updateUserProfile(profileData: {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("Usuário não autenticado")
+    const msg = authError?.message || "Usuário não autenticado"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -62,7 +64,7 @@ export async function updateUserProfile(profileData: {
 
   if (error) {
     console.error("Erro ao atualizar perfil:", error)
-    throw new Error("Falha ao atualizar perfil")
+    throw new Error(error.message || "Falha ao atualizar perfil")
   }
 
   revalidatePath("/dashboard")
@@ -80,7 +82,8 @@ export async function updateClinicInfo(clinicData: {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("Usuário não autenticado")
+    const msg = authError?.message || "Usuário não autenticado"
+    throw new Error(msg)
   }
 
   const { data, error } = await supabase
@@ -95,7 +98,7 @@ export async function updateClinicInfo(clinicData: {
 
   if (error) {
     console.error("Erro ao atualizar informações da clínica:", error)
-    throw new Error("Falha ao atualizar informações da clínica")
+    throw new Error(error.message || "Falha ao atualizar informações da clínica")
   }
 
   revalidatePath("/dashboard")
@@ -111,7 +114,8 @@ export async function updateEmail(newEmail: string): Promise<{ success: boolean;
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("Usuário não autenticado")
+    const msg = authError?.message || "Usuário não autenticado"
+    throw new Error(msg)
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -120,7 +124,7 @@ export async function updateEmail(newEmail: string): Promise<{ success: boolean;
 
   if (error) {
     console.error("Erro ao atualizar email:", error)
-    return { success: false, message: error.message }
+    return { success: false, message: error.message || "Erro ao atualizar email" }
   }
 
   return { success: true, message: "Email de confirmação enviado para o novo endereço" }
@@ -135,7 +139,8 @@ export async function updatePassword(newPassword: string): Promise<{ success: bo
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("Usuário não autenticado")
+    const msg = authError?.message || "Usuário não autenticado"
+    throw new Error(msg)
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -144,7 +149,7 @@ export async function updatePassword(newPassword: string): Promise<{ success: bo
 
   if (error) {
     console.error("Erro ao atualizar senha:", error)
-    return { success: false, message: error.message }
+    return { success: false, message: error.message || "Erro ao atualizar senha" }
   }
 
   return { success: true, message: "Senha atualizada com sucesso" }
