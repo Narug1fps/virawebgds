@@ -23,27 +23,37 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash
-      if (hash && hash.includes('type=recovery')) {
+      console.log('Hash URL:', hash) // Debug
+
+      if (hash && hash.includes('access_token')) {
+        // Remove o # inicial e divide os parâmetros
         const params = new URLSearchParams(hash.replace('#', ''))
-        const code = params.get('code')
-        if (code) {
-          setRecoveryToken(code)
-          setIsInitializing(false)
+        const accessToken = params.get('access_token')
+        const type = params.get('type')
+
+        console.log('Token:', accessToken, 'Type:', type) // Debug
+
+        if (accessToken && type === 'recovery') {
+          setRecoveryToken(accessToken)
         } else {
-          console.error('Código de recuperação não encontrado no URL')
+          console.error('Token de recuperação não encontrado ou tipo incorreto')
           toast({
             title: "Erro de Autenticação",
-            description: "Link de recuperação inválido ou expirado. Solicite um novo link.",
+            description: "Link de recuperação inválido. Solicite um novo link.",
             variant: "destructive",
           })
-          router.push('/')
         }
       } else {
-        setIsInitializing(false)
-        router.push('/')
+        console.error('Hash não contém access_token')
+        toast({
+          title: "Link Inválido",
+          description: "O link de recuperação está incompleto. Solicite um novo link.",
+          variant: "destructive",
+        })
       }
+      setIsInitializing(false)
     }
-  }, [router, toast])
+  }, [toast])
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
@@ -103,11 +113,23 @@ export default function ResetPasswordPage() {
     try {
       if (!recoveryToken) throw new Error('Token de recuperação não encontrado.')
       
-      const { error } = await supabase.auth.exchangeCodeForSession(recoveryToken)
-      if (error) throw new Error('Link de recuperação inválido ou expirado')
+      // Primeiro, configura a sessão com o token de recuperação
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: recoveryToken,
+        refresh_token: ''
+      })
       
+      if (sessionError) {
+        console.error('Erro na sessão:', sessionError)
+        throw new Error('Link de recuperação inválido ou expirado')
+      }
+
+      // Depois atualiza a senha
       const { error: updateError } = await supabase.auth.updateUser({ password })
-      if (updateError) throw new Error(updateError.message || 'Erro ao redefinir senha')
+      if (updateError) {
+        console.error('Erro ao atualizar:', updateError)
+        throw new Error(updateError.message || 'Erro ao redefinir senha')
+      }
 
       toast({
         title: "Senha redefinida!",
