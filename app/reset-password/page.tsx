@@ -22,38 +22,46 @@ export default function ResetPasswordPage() {
   // Captura o token apenas no cliente
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const hash = window.location.hash
-      console.log('Hash URL:', hash) // Debug
+      // Pega o path completo da URL
+      const pathname = window.location.pathname
+      console.log('URL Path:', pathname)
 
-      if (hash && hash.includes('access_token')) {
-        // Remove o # inicial e divide os parâmetros
-        const params = new URLSearchParams(hash.replace('#', ''))
-        const accessToken = params.get('access_token')
-        const type = params.get('type')
+      // Verifica se o token está na URL
+      if (pathname.includes('access_token=')) {
+        const token = pathname
+          .split('access_token=')[1]
+          ?.split('&')[0] // Pega o token até o próximo & se existir
+          
+        console.log('Token encontrado:', token ? 'Sim' : 'Não')
 
-        console.log('Token:', accessToken, 'Type:', type) // Debug
-
-        if (accessToken && type === 'recovery') {
-          setRecoveryToken(accessToken)
+        if (token) {
+          setRecoveryToken(token)
+          // Limpa a URL para não deixar o token exposto
+          window.history.replaceState({}, '', '/reset-password')
         } else {
-          console.error('Token de recuperação não encontrado ou tipo incorreto')
+          console.error('Token não encontrado na URL')
           toast({
             title: "Erro de Autenticação",
             description: "Link de recuperação inválido. Solicite um novo link.",
             variant: "destructive",
           })
+          router.push('/')
         }
       } else {
-        console.error('Hash não contém access_token')
-        toast({
-          title: "Link Inválido",
-          description: "O link de recuperação está incompleto. Solicite um novo link.",
-          variant: "destructive",
-        })
+        // Se não há token na URL e também não há token salvo, redireciona
+        if (!recoveryToken) {
+          console.error('URL não contém access_token')
+          toast({
+            title: "Link Inválido",
+            description: "O link de recuperação está incompleto. Solicite um novo link.",
+            variant: "destructive",
+          })
+          router.push('/')
+        }
       }
       setIsInitializing(false)
     }
-  }, [toast])
+  }, [router, toast, recoveryToken])
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
