@@ -96,20 +96,26 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ token, password }),
       })
 
+      const result = await response.json()
+
       if (!response.ok) {
-        throw new Error('Falha ao redefinir senha')
+        toast({
+          title: "Erro",
+          description: result.error || 'Não foi possível redefinir sua senha. Tente novamente.',
+          variant: "destructive",
+        })
+        return
       }
 
       toast({
         title: "Senha redefinida!",
         description: "Sua senha foi alterada com sucesso.",
       })
-
       router.push('/')
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Não foi possível redefinir sua senha. Tente novamente.",
+        description: error instanceof Error ? error.message : String(error),
         variant: "destructive",
       })
     } finally {
