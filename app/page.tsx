@@ -51,6 +51,16 @@ export default function Home() {
   const [isNewUser, setIsNewUser] = useState(false)
   const { toast } = useToast()
 
+  // Redireciona para reset-password se o link de recuperação do Supabase for acessado
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash.includes("type=recovery")) {
+        router.replace("/reset-password" + hash);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (authLoading || subLoading) return
 

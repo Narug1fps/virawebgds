@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock } from 'lucide-react'
+import Image from 'next/image'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -14,7 +15,15 @@ export default function ResetPasswordPage() {
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  // Captura o token da hash da URL se type=recovery estiver presente
+  let token = searchParams.get('token')
+  if (typeof window !== 'undefined' && !token) {
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      const params = new URLSearchParams(hash.replace('#', ''));
+      token = params.get('access_token');
+    }
+  }
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
@@ -105,9 +114,9 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-blue-400 rounded-xl flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">V</span>
-          </div>
+          <div className=" w-20 flex items-center justify-center mb-4">
+                     <Image width={214} height={191} alt='' className='' src="/viraweb7.png" />
+                    </div>
           <h1 className="text-2xl font-bold">Redefinir senha</h1>
           <p className="text-gray-600 text-center mt-2">
             Digite sua nova senha
@@ -180,7 +189,7 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               onClick={() => router.push('/')}
-              className="text-blue-500 hover:text-blue-600 text-sm"
+              className="text-primary cursor-pointer text-sm"
             >
               Voltar para login
             </button>
