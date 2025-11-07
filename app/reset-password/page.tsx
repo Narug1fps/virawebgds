@@ -25,34 +25,25 @@ export default function ResetPasswordPage() {
       const hash = window.location.hash
       if (hash && hash.includes('type=recovery')) {
         const params = new URLSearchParams(hash.replace('#', ''))
-        const token = params.get('access_token')
-        if (token) {
-          setRecoveryToken(token)
-          // Tenta estabelecer a sessão com o token de recuperação
-          supabase.auth.setSession({
-            access_token: token,
-            refresh_token: ''
-          }).then(({ error }) => {
-            if (error) {
-              console.error('Erro ao estabelecer sessão:', error)
-              toast({
-                title: "Erro de Autenticação",
-                description: "Link de recuperação inválido ou expirado. Solicite um novo link.",
-                variant: "destructive",
-              })
-              router.push('/')
-            }
-          }).finally(() => {
-            setIsInitializing(false)
-          })
-        } else {
+        const code = params.get('code')
+        if (code) {
+          setRecoveryToken(code)
           setIsInitializing(false)
+        } else {
+          console.error('Código de recuperação não encontrado no URL')
+          toast({
+            title: "Erro de Autenticação",
+            description: "Link de recuperação inválido ou expirado. Solicite um novo link.",
+            variant: "destructive",
+          })
+          router.push('/')
         }
       } else {
         setIsInitializing(false)
+        router.push('/')
       }
     }
-  }, [supabase, router, toast])
+  }, [router, toast])
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
@@ -111,8 +102,12 @@ export default function ResetPasswordPage() {
 
     try {
       if (!recoveryToken) throw new Error('Token de recuperação não encontrado.')
-      const { error } = await supabase.auth.updateUser({ password })
-      if (error) throw new Error(error.message || 'Erro ao redefinir senha')
+      
+      const { error } = await supabase.auth.exchangeCodeForSession(recoveryToken)
+      if (error) throw new Error('Link de recuperação inválido ou expirado')
+      
+      const { error: updateError } = await supabase.auth.updateUser({ password })
+      if (updateError) throw new Error(updateError.message || 'Erro ao redefinir senha')
 
       toast({
         title: "Senha redefinida!",
