@@ -15,6 +15,7 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
   const [recoveryToken, setRecoveryToken] = useState<string | null>(null)
+  const [recoveryRefreshToken, setRecoveryRefreshToken] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
   const supabase = createClient()
@@ -22,46 +23,33 @@ export default function ResetPasswordPage() {
   // Captura o token apenas no cliente
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Faz debug: mostra a hash completa
       const hash = window.location.hash
-      console.log('Hash URL:', hash)
-
       // Extrai o access_token da hash (formato: #access_token=...&type=recovery&...)
       if (hash && hash.includes('access_token')) {
         const params = new URLSearchParams(hash.replace('#', ''))
         const accessToken = params.get('access_token')
         const type = params.get('type')
-
-        console.log('access_token:', !!accessToken, 'type:', type)
-
-        if (accessToken && type === 'recovery') {
+        if (accessToken && (type === 'recovery' || !type)) {
+          const refreshToken = params.get('refresh_token')
           setRecoveryToken(accessToken)
-          // limpa a hash para não deixar o token exposto no URL
-          window.history.replaceState({}, '', window.location.pathname)
-        } else if (accessToken && !type) {
-          // Caso o link forneça apenas access_token sem type, aceite também
-          setRecoveryToken(accessToken)
+          setRecoveryRefreshToken(refreshToken)
           window.history.replaceState({}, '', window.location.pathname)
         } else {
-          console.error('Token de recuperação inválido ou tipo incorreto')
           toast({
             title: "Erro de Autenticação",
             description: "Link de recuperação inválido ou expirado. Solicite um novo link.",
             variant: "destructive",
           })
-          router.push('/')
+          setTimeout(() => router.push('/'), 2000)
         }
       } else {
-        console.error('Hash não contém access_token')
-        // Não redirecionamos imediatamente para permitir debug; apenas mostra erro e volta
         toast({
           title: "Link Inválido",
           description: "O link de recuperação está incompleto. Solicite um novo link.",
           variant: "destructive",
         })
-        router.push('/')
+        setTimeout(() => router.push('/'), 2000)
       }
-
       setIsInitializing(false)
     }
   }, [router, toast])
@@ -81,7 +69,6 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!recoveryToken) {
       toast({
         title: "Link inválido",
@@ -90,7 +77,6 @@ export default function ResetPasswordPage() {
       })
       return
     }
-
     if (!password || !confirmPassword) {
       toast({
         title: "Campos obrigatórios",
@@ -99,7 +85,6 @@ export default function ResetPasswordPage() {
       })
       return
     }
-
     if (password !== confirmPassword) {
       toast({
         title: "Senhas diferentes",
@@ -108,7 +93,6 @@ export default function ResetPasswordPage() {
       })
       return
     }
-
     const passwordStrength = getPasswordStrength(password)
     if (passwordStrength.strength < 3) {
       toast({
@@ -118,35 +102,39 @@ export default function ResetPasswordPage() {
       })
       return
     }
-
     setIsLoading(true)
-
     try {
-      if (!recoveryToken) throw new Error('Token de recuperação não encontrado.')
-      
-      // Primeiro, configura a sessão com o token de recuperação
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: recoveryToken,
-        refresh_token: ''
+      // Chama diretamente a API de usuário do Supabase usando o access_token
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuração do Supabase não encontrada.')
+      const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${recoveryToken}`,
+          apikey: supabaseAnonKey,
+        },
+        body: JSON.stringify({ password }),
       })
-      
-      if (sessionError) {
-        console.error('Erro na sessão:', sessionError)
-        throw new Error('Link de recuperação inválido ou expirado')
+      const resJson = await res.json().catch(() => null)
+      if (!res.ok) {
+        const message = (resJson && (resJson.message || resJson.error_description || resJson.error)) || 'Link de recuperação inválido ou expirado'
+        toast({
+          title: "Erro",
+          description: message,
+          variant: "destructive",
+        })
+        if (message.includes('expired') || message.includes('inválido')) {
+          setTimeout(() => router.push('/'), 2000)
+        }
+        return
       }
-
-      // Depois atualiza a senha
-      const { error: updateError } = await supabase.auth.updateUser({ password })
-      if (updateError) {
-        console.error('Erro ao atualizar:', updateError)
-        throw new Error(updateError.message || 'Erro ao redefinir senha')
-      }
-
       toast({
         title: "Senha redefinida!",
         description: "Sua senha foi alterada com sucesso.",
       })
-      router.push('/')
+      setTimeout(() => router.push('/'), 2000)
     } catch (error) {
       toast({
         title: "Erro",
