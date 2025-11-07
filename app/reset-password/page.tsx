@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
@@ -90,22 +91,18 @@ export default function ResetPasswordPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
-      })
+      if (!token) throw new Error('Token de recuperação não encontrado.')
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuração do Supabase não encontrada.')
 
-      const result = await response.json()
+      const supabase = createClient(supabaseUrl, supabaseAnonKey)
+      // Autentica o usuário com o token de recuperação
+      const { error: sessionError } = await supabase.auth.setSession({ access_token: token, refresh_token: '' })
+      if (sessionError) throw new Error(sessionError.message || 'Erro ao autenticar com token de recuperação')
 
-      if (!response.ok) {
-        toast({
-          title: "Erro",
-          description: result.error || 'Não foi possível redefinir sua senha. Tente novamente.',
-          variant: "destructive",
-        })
-        return
-      }
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw new Error(error.message || 'Erro ao redefinir senha')
 
       toast({
         title: "Senha redefinida!",
