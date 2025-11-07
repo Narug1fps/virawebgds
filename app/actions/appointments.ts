@@ -54,6 +54,11 @@ export async function createAppointment(appointmentData: {
   appointment_time: string
   duration_minutes: number
   notes?: string
+  recurrence?: {
+    type: 'daily' | 'weekly' | 'monthly' | string
+    weekdays?: number[]
+    count?: number
+  }
 }) {
   const supabase = await createClient()
 
@@ -75,28 +80,114 @@ export async function createAppointment(appointmentData: {
     throw new Error(limitCheck.message || "Limite de agendamentos mensais atingido.")
   }
 
-  const { data, error } = await supabase
-    .from("appointments")
-    .insert({
-      user_id: user.id,
-      ...appointmentData,
-      notes: appointmentData.notes || null,
-      status: "scheduled",
-    })
-    .select()
-    .single()
+  // Support recurring appointments: if recurrence provided, generate multiple rows
+  const recurrence = (appointmentData as any).recurrence
 
-  if (error) {
-    console.error(" Error creating appointment:", error)
-    throw new Error("Failed to create appointment")
+  if (recurrence && recurrence.count && recurrence.count > 100) {
+    throw new Error('Número de repetições muito alto')
   }
 
-  await createNotification("Agendamento Criado", "Novo agendamento foi criado com sucesso.", "success")
-  
-  // Atualiza as metas de agendamentos
-  await updateGoalsForAction({ type: "appointment" })
+  if (!recurrence || recurrence.type === 'none') {
+    const { data, error } = await supabase
+      .from("appointments")
+      .insert({
+        user_id: user.id,
+        ...appointmentData,
+        notes: appointmentData.notes || null,
+        status: "scheduled",
+      })
+      .select()
+      .single()
 
-  return data as Appointment
+    if (error) {
+      console.error(" Error creating appointment:", error)
+      throw new Error("Failed to create appointment")
+    }
+
+    await createNotification("Agendamento Criado", "Novo agendamento foi criado com sucesso.", "success")
+    
+    // Atualiza as metas de agendamentos
+    await updateGoalsForAction({ type: "appointment" })
+
+    return data as Appointment
+  }
+
+  // generate occurrences based on recurrence rules
+  const occurrences: Array<any> = []
+  const startDate = new Date(appointmentData.appointment_date + 'T00:00:00')
+  const timePart = appointmentData.appointment_time || '00:00'
+  const [startHour, startMinute] = timePart.split(':').map((v) => parseInt(v, 10))
+
+  const count = recurrence.count || 1
+
+  if (recurrence.type === 'daily') {
+    for (let i = 0; i < count; i++) {
+      const d = new Date(startDate)
+      d.setDate(d.getDate() + i)
+      const dateStr = d.toISOString().split('T')[0]
+      occurrences.push({
+        user_id: user.id,
+        patient_id: appointmentData.patient_id,
+        professional_id: appointmentData.professional_id,
+        appointment_date: dateStr,
+        appointment_time: appointmentData.appointment_time,
+        duration_minutes: appointmentData.duration_minutes,
+        notes: appointmentData.notes || null,
+        status: 'scheduled',
+      })
+    }
+  } else if (recurrence.type === 'weekly') {
+    // recurrence.weekdays is array of weekday indexes 0(Sun)-6
+    const weekdays: number[] = recurrence.weekdays && recurrence.weekdays.length ? recurrence.weekdays : [startDate.getDay()]
+    let found = 0
+    let cursor = new Date(startDate)
+    // iterate forward until we collect 'count' occurrences
+    while (found < count) {
+      if (weekdays.includes(cursor.getDay())) {
+        occurrences.push({
+          user_id: user.id,
+          patient_id: appointmentData.patient_id,
+          professional_id: appointmentData.professional_id,
+          appointment_date: cursor.toISOString().split('T')[0],
+          appointment_time: appointmentData.appointment_time,
+          duration_minutes: appointmentData.duration_minutes,
+          notes: appointmentData.notes || null,
+          status: 'scheduled',
+        })
+        found++
+      }
+      cursor.setDate(cursor.getDate() + 1)
+    }
+  } else if (recurrence.type === 'monthly') {
+    const dayOfMonth = startDate.getDate()
+    for (let i = 0; i < count; i++) {
+      const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, dayOfMonth)
+      const dateStr = d.toISOString().split('T')[0]
+      occurrences.push({
+        user_id: user.id,
+        patient_id: appointmentData.patient_id,
+        professional_id: appointmentData.professional_id,
+        appointment_date: dateStr,
+        appointment_time: appointmentData.appointment_time,
+        duration_minutes: appointmentData.duration_minutes,
+        notes: appointmentData.notes || null,
+        status: 'scheduled',
+      })
+    }
+  } else {
+    throw new Error('Tipo de recorrência não suportado')
+  }
+
+  // Insert all occurrences in a single batch
+  const { data: inserted, error: insertErr } = await supabase.from('appointments').insert(occurrences).select()
+  if (insertErr) {
+    console.error(' Error creating recurring appointments:', insertErr)
+    throw new Error('Failed to create recurring appointments')
+  }
+
+  await createNotification("Agendamentos Criados", `${inserted.length} agendamento(s) criados com sucesso.`, "success")
+  await updateGoalsForAction({ type: "appointment" })
+  return inserted as Appointment[]
 }
 
 export async function updateAppointment(

@@ -48,6 +48,26 @@ export function useAuth() {
     return { data, error }
   }
 
+  const sendPasswordReset = async (email: string) => {
+    // Send password reset email via Supabase
+    // Uses Supabase JS v2 API: resetPasswordForEmail
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin,
+    })
+    return { data, error }
+  }
+
+  const signInWithGoogle = async () => {
+    // Start OAuth flow via Supabase
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin,
+      },
+    })
+    return { data, error }
+  }
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     return { error }
@@ -59,5 +79,7 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
+    sendPasswordReset,
+    signInWithGoogle,
   }
 }

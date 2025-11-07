@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { GoogleButton } from "@/components/ui/google-button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
@@ -13,9 +14,11 @@ interface LoginPageProps {
   onLogin: (email: string, password: string) => void
   onSignupClick: () => void
   onBackClick: () => void
+  onForgotPassword?: () => void
+  onGoogleSignIn?: () => void
 }
 
-export default function LoginPage({ onLogin, onSignupClick, onBackClick }: LoginPageProps) {
+export default function LoginPage({ onLogin, onSignupClick, onBackClick, onForgotPassword, onGoogleSignIn }: LoginPageProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -124,6 +127,19 @@ export default function LoginPage({ onLogin, onSignupClick, onBackClick }: Login
               )}
             </Button>
           </form>
+
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <button
+              onClick={() => onForgotPassword && onForgotPassword()}
+              className="text-sm text-primary font-semibold cursor-pointer transition-colors"
+            >
+              Esqueceu a senha?
+            </button>
+
+            <div className="w-1/2">
+              <GoogleButton onClick={() => onGoogleSignIn && onGoogleSignIn()} variant="signin" />
+            </div>
+          </div>
 
           <div className="mt-6 text-center">
             <p className="text-muted-foreground text-sm">

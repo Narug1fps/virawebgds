@@ -60,6 +60,9 @@ export default function CalendarAppointments() {
     appointment_time: "",
     duration_minutes: 60,
     notes: "",
+    recurrence_type: "none",
+    recurrence_weekdays: [] as number[],
+    recurrence_count: 1,
   })
 
   useEffect(() => {
@@ -160,8 +163,31 @@ export default function CalendarAppointments() {
             description: "O agendamento foi atualizado com sucesso",
           })
         } else {
-          const newAppointment = await createAppointment(formData)
-          setAppointments([...appointments, newAppointment])
+          const payload: any = {
+            patient_id: formData.patient_id,
+            professional_id: formData.professional_id,
+            appointment_date: formData.appointment_date,
+            appointment_time: formData.appointment_time,
+            duration_minutes: formData.duration_minutes,
+            notes: formData.notes,
+          }
+
+          if (formData.recurrence_type && formData.recurrence_type !== 'none') {
+            payload.recurrence = {
+              type: formData.recurrence_type,
+              weekdays: formData.recurrence_weekdays || [],
+              count: formData.recurrence_count || 1,
+            }
+          }
+
+          const newAppointment = await createAppointment(payload)
+          // createAppointment may return a single appointment or an array when recurring
+          if (Array.isArray(newAppointment)) {
+            setAppointments([...appointments, ...newAppointment])
+          } else {
+            setAppointments([...appointments, newAppointment])
+          }
+
           toast({
             title: "Agendamento criado",
             description: "O agendamento foi criado com sucesso",
@@ -174,6 +200,9 @@ export default function CalendarAppointments() {
           appointment_time: "",
           duration_minutes: 60,
           notes: "",
+          recurrence_type: "none",
+          recurrence_weekdays: [],
+          recurrence_count: 1,
         })
         setEditingId(null)
         setShowForm(false)
@@ -197,6 +226,10 @@ export default function CalendarAppointments() {
       appointment_time: appointment.appointment_time,
       duration_minutes: appointment.duration_minutes,
       notes: appointment.notes || "",
+      // existing appointments don't have recurrence stored yet, default to none
+      recurrence_type: "none",
+      recurrence_weekdays: [],
+      recurrence_count: 1,
     })
     setEditingId(appointment.id)
     setShowForm(true)
@@ -326,6 +359,9 @@ export default function CalendarAppointments() {
               appointment_time: "",
               duration_minutes: 60,
               notes: "",
+              recurrence_type: "none",
+              recurrence_weekdays: [],
+              recurrence_count: 1,
             })
             setShowForm(!showForm)
           }}
@@ -392,6 +428,58 @@ export default function CalendarAppointments() {
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="bg-background"
             />
+
+            {/* Recurrence options */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-foreground mb-2">Recorrência</label>
+              <select
+                value={formData.recurrence_type}
+                onChange={(e) => setFormData({ ...formData, recurrence_type: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="none">Nenhuma</option>
+                <option value="daily">Diária</option>
+                <option value="weekly">Semanal (dias da semana)</option>
+                <option value="monthly">Mensal (dia do mês)</option>
+              </select>
+            </div>
+
+            {formData.recurrence_type === 'weekly' && (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">Dias da semana</label>
+                <div className="flex gap-2 flex-wrap">
+                  {dayNames.map((d, idx) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        const idxDay = idx // 0..6
+                        const current = formData.recurrence_weekdays || []
+                        if (current.includes(idxDay)) {
+                          setFormData({ ...formData, recurrence_weekdays: current.filter((c) => c !== idxDay) })
+                        } else {
+                          setFormData({ ...formData, recurrence_weekdays: [...current, idxDay] })
+                        }
+                      }}
+                      className={`px-2 py-1 border rounded ${formData.recurrence_weekdays?.includes(idx) ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {formData.recurrence_type !== 'none' && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Repetir (quantas vezes)</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={formData.recurrence_count}
+                  onChange={(e) => setFormData({ ...formData, recurrence_count: Number.parseInt(e.target.value) || 1 })}
+                />
+              </div>
+            )}
           </div>
           <div className="flex gap-2 mt-4">
             <Button

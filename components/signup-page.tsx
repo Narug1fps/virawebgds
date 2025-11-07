@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { GoogleButton } from "@/components/ui/google-button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
@@ -13,9 +14,10 @@ interface SignupPageProps {
   onSignup: (name: string, email: string, password: string) => Promise<void>
   onLoginClick: () => void
   onBackClick: () => void
+  onGoogleSignIn?: () => void
 }
 
-export default function SignupPage({ onSignup, onLoginClick, onBackClick }: SignupPageProps) {
+export default function SignupPage({ onSignup, onLoginClick, onBackClick, onGoogleSignIn }: SignupPageProps) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -226,6 +228,12 @@ export default function SignupPage({ onSignup, onLoginClick, onBackClick }: Sign
               )}
             </Button>
           </form>
+
+          <div className="mt-4 flex items-center justify-center">
+            <div className="w-full max-w-xs">
+              <GoogleButton onClick={() => onGoogleSignIn && onGoogleSignIn()} variant="signup" />
+            </div>
+          </div>
 
           <div className="mt-6 text-center">
             <p className="text-muted-foreground text-sm">
