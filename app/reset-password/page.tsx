@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
@@ -12,18 +12,27 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [token, setToken] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  // Captura o token da hash da URL se type=recovery estiver presente
-  let token = searchParams.get('token')
-  if (typeof window !== 'undefined' && !token) {
-    const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
-      const params = new URLSearchParams(hash.replace('#', ''));
-      token = params.get('access_token');
+
+  // Captura o token apenas no cliente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Tenta pegar o token da query string
+      const urlParams = new URLSearchParams(window.location.search)
+      let foundToken = urlParams.get('token')
+      // Se não encontrar, tenta pegar da hash
+      if (!foundToken) {
+        const hash = window.location.hash
+        if (hash && hash.includes('type=recovery')) {
+          const params = new URLSearchParams(hash.replace('#', ''))
+          foundToken = params.get('access_token')
+        }
+      }
+      setToken(foundToken)
     }
-  }
+  }, [])
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
