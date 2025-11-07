@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { createClient } from '@/lib/supabase-client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock } from 'lucide-react'
 import Image from 'next/image'
@@ -13,49 +13,46 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
-  const [sessionReady, setSessionReady] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
+  const supabase = createClient()
 
   // Captura o token apenas no cliente
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Tenta pegar o token da query string
-      const urlParams = new URLSearchParams(window.location.search)
-      let foundToken = urlParams.get('token')
-      // Se não encontrar, tenta pegar da hash
-      if (!foundToken) {
-        const hash = window.location.hash
-        if (hash && hash.includes('type=recovery')) {
-          const params = new URLSearchParams(hash.replace('#', ''))
-          foundToken = params.get('access_token')
+      const hash = window.location.hash
+      if (hash && hash.includes('type=recovery')) {
+        const params = new URLSearchParams(hash.replace('#', ''))
+        const token = params.get('access_token')
+        if (token) {
+          setRecoveryToken(token)
+          // Tenta estabelecer a sessão com o token de recuperação
+          supabase.auth.setSession({
+            access_token: token,
+            refresh_token: ''
+          }).then(({ error }) => {
+            if (error) {
+              console.error('Erro ao estabelecer sessão:', error)
+              toast({
+                title: "Erro de Autenticação",
+                description: "Link de recuperação inválido ou expirado. Solicite um novo link.",
+                variant: "destructive",
+              })
+              router.push('/')
+            }
+          }).finally(() => {
+            setIsInitializing(false)
+          })
+        } else {
+          setIsInitializing(false)
         }
-      }
-      setToken(foundToken)
-
-      // Autentica a sessão do Supabase assim que o token for encontrado
-      if (foundToken) {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        if (supabaseUrl && supabaseAnonKey) {
-          const supabase = createClient(supabaseUrl, supabaseAnonKey)
-          supabase.auth.setSession({ access_token: foundToken, refresh_token: '' })
-            .then(({ error }) => {
-              if (error) {
-                toast({
-                  title: "Erro",
-                  description: error.message || 'Erro ao autenticar com token de recuperação',
-                  variant: "destructive",
-                })
-              } else {
-                setSessionReady(true)
-              }
-            })
-        }
+      } else {
+        setIsInitializing(false)
       }
     }
-  }, [])
+  }, [supabase, router, toast])
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
@@ -73,7 +70,7 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!token) {
+    if (!recoveryToken) {
       toast({
         title: "Link inválido",
         description: "O link de redefinição de senha é inválido ou expirou.",
@@ -113,13 +110,7 @@ export default function ResetPasswordPage() {
     setIsLoading(true)
 
     try {
-      if (!token) throw new Error('Token de recuperação não encontrado.')
-      if (!sessionReady) throw new Error('Sessão de recuperação não está pronta. Tente recarregar a página.')
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuração do Supabase não encontrada.')
-
-      const supabase = createClient(supabaseUrl, supabaseAnonKey)
+      if (!recoveryToken) throw new Error('Token de recuperação não encontrado.')
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw new Error(error.message || 'Erro ao redefinir senha')
 
@@ -142,6 +133,14 @@ export default function ResetPasswordPage() {
   const passwordStrength = getPasswordStrength(password)
 
   return (
+    isInitializing ? (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando link de recuperação...</p>
+        </div>
+      </div>
+    ) : (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
         <div className="flex flex-col items-center mb-8">
@@ -232,5 +231,6 @@ export default function ResetPasswordPage() {
         </p>
       </div>
     </div>
+    )
   )
 }
