@@ -14,6 +14,7 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [token, setToken] = useState<string | null>(null)
+  const [sessionReady, setSessionReady] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -32,6 +33,27 @@ export default function ResetPasswordPage() {
         }
       }
       setToken(foundToken)
+
+      // Autentica a sessão do Supabase assim que o token for encontrado
+      if (foundToken) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        if (supabaseUrl && supabaseAnonKey) {
+          const supabase = createClient(supabaseUrl, supabaseAnonKey)
+          supabase.auth.setSession({ access_token: foundToken, refresh_token: '' })
+            .then(({ error }) => {
+              if (error) {
+                toast({
+                  title: "Erro",
+                  description: error.message || 'Erro ao autenticar com token de recuperação',
+                  variant: "destructive",
+                })
+              } else {
+                setSessionReady(true)
+              }
+            })
+        }
+      }
     }
   }, [])
 
@@ -92,15 +114,12 @@ export default function ResetPasswordPage() {
 
     try {
       if (!token) throw new Error('Token de recuperação não encontrado.')
+      if (!sessionReady) throw new Error('Sessão de recuperação não está pronta. Tente recarregar a página.')
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuração do Supabase não encontrada.')
 
       const supabase = createClient(supabaseUrl, supabaseAnonKey)
-      // Autentica o usuário com o token de recuperação
-      const { error: sessionError } = await supabase.auth.setSession({ access_token: token, refresh_token: '' })
-      if (sessionError) throw new Error(sessionError.message || 'Erro ao autenticar com token de recuperação')
-
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw new Error(error.message || 'Erro ao redefinir senha')
 
