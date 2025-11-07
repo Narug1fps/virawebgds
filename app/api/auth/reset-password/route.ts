@@ -21,10 +21,13 @@ export async function POST(req: Request) {
     const { createClient } = await import('@supabase/supabase-js')
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-    const { error } = await supabase.auth.updateUser({
-      password: password
-    })
+    // Autentica o client com o token de recuperação
+    const { error: sessionError } = await supabase.auth.setSession({ access_token: token, refresh_token: '' })
+    if (sessionError) {
+      return NextResponse.json({ error: sessionError.message || 'Erro ao autenticar com token de recuperação' }, { status: 400 })
+    }
 
+    const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       return NextResponse.json({ error: error.message || 'Erro ao redefinir senha' }, { status: 400 })
     }
