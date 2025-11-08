@@ -33,6 +33,26 @@ export default function ResetPasswordPage() {
           const refreshToken = params.get('refresh_token')
           setRecoveryToken(accessToken)
           setRecoveryRefreshToken(refreshToken)
+          // Tenta criar sessão localmente usando o supabase client. Se falhar,
+          // mantemos os tokens para usar o fallback direto na API.
+          ;(async () => {
+            try {
+              // setSession pode lançar ou retornar erro dependendo da versão/config
+              const result = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken ?? '',
+              })
+              if (result.error) {
+                console.warn('setSession falhou:', result.error.message)
+              } else {
+                console.log('Sessão criada via setSession (recuperação)')
+              }
+            } catch (err) {
+              console.warn('setSession throw:', err)
+              // não interrompe: usaremos fallback PATCH na submissão
+            }
+          })()
+          // limpa a hash para não deixar o token exposto no URL
           window.history.replaceState({}, '', window.location.pathname)
         } else {
           toast({
@@ -104,36 +124,69 @@ export default function ResetPasswordPage() {
     }
     setIsLoading(true)
     try {
-      // Chama diretamente a API de usuário do Supabase usando o access_token
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuração do Supabase não encontrada.')
-      const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${recoveryToken}`,
-          apikey: supabaseAnonKey,
-        },
-        body: JSON.stringify({ password }),
-      })
-      const resJson = await res.json().catch(() => null)
-      if (!res.ok) {
-        const message = (resJson && (resJson.message || resJson.error_description || resJson.error)) || 'Link de recuperação inválido ou expirado'
-        toast({
-          title: "Erro",
-          description: message,
-          variant: "destructive",
-        })
-        if (message.includes('expired') || message.includes('inválido')) {
-          setTimeout(() => router.push('/'), 2000)
+      // Primeiro tente usar a API do supabase client (recomendado pelo artigo):
+      // - Se já houver sessão criada via setSession no useEffect, updateUser funcionará.
+      // - Caso contrário, tentamos setSession aqui e então updateUser.
+      let updated = false
+
+      try {
+        // Verifica se já temos sessão
+        const sessionRes = await supabase.auth.getSession()
+        if (sessionRes?.data?.session) {
+          const { data, error } = await supabase.auth.updateUser({ password })
+          if (error) throw error
+          updated = true
+        } else {
+          // Tenta criar sessão com os tokens de recuperação (caso setSession no useEffect tenha falhado)
+            try {
+            const setRes = await supabase.auth.setSession({
+              access_token: recoveryToken,
+              refresh_token: recoveryRefreshToken ?? '',
+            })
+            if (setRes.error) {
+              console.warn('setSession (no submit) retornou erro:', setRes.error.message)
+            } else {
+              const { data, error } = await supabase.auth.updateUser({ password })
+              if (error) throw error
+              updated = true
+            }
+          } catch (err) {
+            console.warn('Erro ao setSession/updateUser:', err)
+          }
         }
-        return
+      } catch (err) {
+        console.warn('Erro ao verificar/criar sessão com supabase client:', err)
       }
-      toast({
-        title: "Senha redefinida!",
-        description: "Sua senha foi alterada com sucesso.",
-      })
+
+      // Se update via client não ocorreu, usa fallback direto na API REST com o token
+      if (!updated) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuração do Supabase não encontrada.')
+
+        const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${recoveryToken}`,
+            apikey: supabaseAnonKey,
+          },
+          body: JSON.stringify({ password }),
+        })
+
+        const resJson = await res.json().catch(() => null)
+        if (!res.ok) {
+          console.error('Erro ao chamar /auth/v1/user', res.status, resJson)
+          const message = (resJson && (resJson.message || resJson.error_description || resJson.error)) || 'Link de recuperação inválido ou expirado'
+          toast({ title: 'Erro', description: message, variant: 'destructive' })
+          if (message.toLowerCase().includes('expired') || message.toLowerCase().includes('inválido')) {
+            setTimeout(() => router.push('/'), 2000)
+          }
+          return
+        }
+      }
+
+      toast({ title: 'Senha redefinida!', description: 'Sua senha foi alterada com sucesso.' })
       setTimeout(() => router.push('/'), 2000)
     } catch (error) {
       toast({
