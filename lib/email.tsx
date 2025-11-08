@@ -9,21 +9,9 @@ export interface EmailOptions {
   text?: string
 }
 
-export async function sendEmail(options: EmailOptions) {
-  // In production, replace this with actual email service
-  console.log(" Email would be sent:", {
-    to: options.to,
-    subject: options.subject,
-    preview: options.text || options.html.substring(0, 100),
-  })
+// Re-export sendEmail from our SMTP implementation
+export { sendEmail } from './email-sender';
 
-  // Simulate email sending
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, messageId: `msg_${Date.now()}` })
-    }, 100)
-  })
-}
 
 export function generateAppointmentConfirmationEmail(data: {
   patientName: string
