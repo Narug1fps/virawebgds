@@ -35,6 +35,7 @@ export default function PatientProfileModal({ patientId, isOpen, onClose, onUpda
   const [uploading, setUploading] = useState(false)
   const [activeTab, setActiveTab] = useState("info")
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [initialPendingPaymentId, setInitialPendingPaymentId] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -339,6 +340,10 @@ export default function PatientProfileModal({ patientId, isOpen, onClose, onUpda
                     <PatientFinancialTab 
                       patientId={patientId}
                       payments={payments.filter(p => p.patient_id === patientId)}
+                      onOpenPaymentModal={(pendingId) => {
+                        setInitialPendingPaymentId(pendingId || null)
+                        setShowPaymentModal(true)
+                      }}
                     />
                   )}
                 </div>
@@ -354,10 +359,15 @@ export default function PatientProfileModal({ patientId, isOpen, onClose, onUpda
           open={showPaymentModal}
           onOpenChange={(open) => {
             setShowPaymentModal(open)
-            if (!open) loadPatient()
+            if (!open) {
+              loadPatient()
+              setInitialPendingPaymentId(null)
+            }
           }}
           defaultPatientId={patientId}
           onSaved={loadPatient}
+          initialSettlePending={Boolean(initialPendingPaymentId)}
+          initialPendingPaymentId={initialPendingPaymentId}
         />
       )}
     </Dialog>

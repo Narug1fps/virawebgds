@@ -11,12 +11,14 @@ import {
 import { AttendanceTab } from "@/components/financial/attendance-tab"
 import PaymentModal from "@/components/financial/payment-modal"
 import FinancialChart from "./financial-chart"
+import PendingPaymentsModal from "@/components/financial/pending-payments-modal"
 
 export default function FinancialTab() {
   const [activeTab, setActiveTab] = useState("payments")
   const [summary, setSummary] = useState({ totalReceived: 0, totalDiscounts: 0, totalPending: 0 })
   const [recentPayments, setRecentPayments] = useState<any[]>([])
   const [showModal, setShowModal] = useState(false)
+  const [showPendingModal, setShowPendingModal] = useState(false)
 
   const loadSummary = async () => {
     try {
@@ -100,9 +102,14 @@ export default function FinancialTab() {
           {/* Título e botão */}
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
             <h3 className="text-xl font-bold text-foreground">Pagamentos Recentes</h3>
-            <Button onClick={() => setShowModal(true)} className="bg-primary text-primary-foreground shadow">
-              Registrar Pagamento
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowModal(true)} className="bg-primary text-primary-foreground shadow">
+                Registrar Pagamento
+              </Button>
+              <Button onClick={() => setShowPendingModal(true)} variant="outline">
+                Gerenciar Pendentes
+              </Button>
+            </div>
           </div>
 
           {/* Lista de pagamentos recentes em cards */}
@@ -192,6 +199,14 @@ export default function FinancialTab() {
             onSaved={async () => {
               setShowModal(false)
               await loadSummary()
+            }}
+          />
+          <PendingPaymentsModal
+            open={showPendingModal}
+            onOpenChange={setShowPendingModal}
+            onUpdated={async () => {
+              await loadSummary()
+              setShowPendingModal(false)
             }}
           />
         </>

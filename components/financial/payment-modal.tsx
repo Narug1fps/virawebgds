@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getPatients } from "@/app/actions/patients"
-import { recordPayment } from "@/app/actions/financial-actions"
+import { recordPayment, getPendingPaymentsForPatient, markPendingPaymentAsPaid } from "@/app/actions/financial-actions"
 import { useToast } from "@/hooks/use-toast"
 import { mapDbErrorToUserMessage } from "@/lib/error-messages"
 
@@ -16,9 +16,11 @@ interface Props {
   onOpenChange: (open: boolean) => void
   onSaved?: () => void
   defaultPatientId?: string | null
+  initialSettlePending?: boolean
+  initialPendingPaymentId?: string | null
 }
 
-export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatientId = null }: Props) {
+export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatientId = null, initialSettlePending = false, initialPendingPaymentId = null }: Props) {
   const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([])
   const [patientId, setPatientId] = useState<string | null>(defaultPatientId)
   const [amount, setAmount] = useState<string>("")
@@ -27,6 +29,9 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
   const [status, setStatus] = useState<string>("paid")
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10))
   const [loading, setLoading] = useState(false)
+  const [pendingPayments, setPendingPayments] = useState<Array<any>>([])
+  const [settlePending, setSettlePending] = useState(false)
+  const [selectedPendingPayment, setSelectedPendingPayment] = useState<string | null>(null)
   const [isRecurring, setIsRecurring] = useState(false)
   // recurrence simplified: only allow monthly recurrence on a given day
   const [recurrenceDay, setRecurrenceDay] = useState<number>(Number(new Date().toISOString().slice(8, 10)) || 1)
@@ -46,8 +51,34 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
       load()
       // Set default patient if provided
       setPatientId(defaultPatientId || null)
+      // Apply initial settle flags if provided by parent
+      setSettlePending(Boolean(initialSettlePending))
+      setSelectedPendingPayment(initialPendingPaymentId || null)
+      if (initialSettlePending) setStatus('paid')
     }
   }, [open, defaultPatientId])
+
+  // Quando o paciente selecionado mudar, carregamos pagamentos pendentes
+  useEffect(() => {
+    if (!patientId) {
+      setPendingPayments([])
+      setSelectedPendingPayment(null)
+      return
+    }
+
+    let mounted = true
+    const loadPending = async () => {
+      try {
+        const data = await getPendingPaymentsForPatient(patientId)
+        if (mounted) setPendingPayments(Array.isArray(data) ? data : [])
+      } catch (err) {
+        console.error('Error loading pending payments:', err)
+      }
+    }
+
+    loadPending()
+    return () => { mounted = false }
+  }, [patientId])
 
   const handleSubmit = async () => {
     if (!amount || Number(amount) <= 0) {
@@ -76,7 +107,7 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
 
     setLoading(true)
     try {
-      await recordPayment({
+      const created = await recordPayment({
         patient_id: patientId,
         amount: amountNumber,
         discount: discountReais,
@@ -89,6 +120,19 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
         // no recurrence_end_date for now (infinite until user cancels)
         recurrence_end_date: undefined,
       })
+
+      // Se o usuário marcou que este pagamento quita um pendente, atualizamos o pendente
+      if (settlePending && selectedPendingPayment) {
+        try {
+          // created may be undefined in some fallback cases; use provided date as fallback
+          const paidAt = (created && (created as any).payment_date) || new Date(date).toISOString()
+          await markPendingPaymentAsPaid(selectedPendingPayment, paidAt)
+        } catch (err) {
+          console.error('Erro ao marcar pendente como pago:', err)
+          // Não impedimos o fluxo de sucesso do novo pagamento, apenas avisamos
+          toast({ title: 'Aviso', description: 'Pagamento salvo, mas falhou ao quitar o pendente selecionado.', variant: 'destructive' })
+        }
+      }
 
       toast({ title: "Pagamento registrado", description: "Pagamento salvo com sucesso." })
       onOpenChange(false)
@@ -173,6 +217,42 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
                 <SelectItem value="refunded">Estornado</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <label className="text-sm text-muted-foreground mb-1 block">Quitar pendente</label>
+            <div className="flex items-center gap-2">
+              <input
+                id="settle-pending"
+                type="checkbox"
+                checked={settlePending}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setSettlePending(checked)
+                  if (checked) setStatus('paid')
+                }}
+              />
+              <label htmlFor="settle-pending" className="text-sm">Este pagamento deve quitar um pagamento pendente</label>
+            </div>
+
+            {settlePending && (
+              <div className="mt-2">
+                <label className="text-xs text-muted-foreground block mb-1">Selecione o pagamento pendente</label>
+                <Select value={selectedPendingPayment ?? "none"} onValueChange={(v) => setSelectedPendingPayment(v === 'none' ? null : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={pendingPayments.length ? 'Selecione o pendente' : 'Nenhum pendente encontrado'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {pendingPayments.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {`R$ ${Number(p.amount || 0).toFixed(2)} - ${p.due_date ? new Date(p.due_date).toLocaleDateString() : 'sem data'}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div>

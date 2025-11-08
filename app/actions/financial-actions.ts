@@ -800,6 +800,85 @@ export async function getPatientFinancialSummary(patientId: string) {
   return { paid, due, discounts }
 }
 
+// ✅ RETORNA PAGAMENTOS PENDENTES/ATRASADOS DE UM PACIENTE
+export async function getPendingPaymentsForPatient(patientId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) throw new Error('User not authenticated')
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, amount, discount, status, due_date, payment_date, notes')
+    .eq('user_id', user.id)
+    .eq('patient_id', patientId)
+    .in('status', ['pending', 'overdue'])
+    .order('due_date', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching pending payments for patient:', error)
+    return []
+  }
+
+  return data || []
+}
+
+// ✅ Marca um pagamento pendente como quitado (paid)
+export async function markPendingPaymentAsPaid(pendingPaymentId: string, paidAt?: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) throw new Error('User not authenticated')
+
+  const paymentDate = paidAt || getBrazilDateTime()
+  const updatedAt = new Date().toISOString()
+
+  const { error } = await supabase
+    .from('payments')
+    .update({ status: 'paid', payment_date: paymentDate, updated_at: updatedAt })
+    .eq('id', pendingPaymentId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Error marking pending payment as paid:', error)
+    throw error
+  }
+
+  return { success: true }
+}
+
+// ✅ RETORNA TODOS OS PAGAMENTOS PENDENTES/ATRASADOS DO USUÁRIO
+export async function getAllPendingPayments(limit = 100) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) throw new Error('User not authenticated')
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, amount, discount, status, due_date, payment_date, notes, patients (id, name)')
+    .eq('user_id', user.id)
+    .in('status', ['pending', 'overdue'])
+    .order('due_date', { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error('Error fetching all pending payments:', error)
+    return []
+  }
+
+  return data || []
+}
+
 // ✅ LISTA DE PACIENTES COM DÉBITOS
 export async function getOutstandingPatients() {
   const supabase = await createClient()
