@@ -102,11 +102,11 @@ export default function LandingPage({ onLoginClick, onSignupClick }: LandingPage
               </p>
             </div>
 
-            <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance leading-tight">
+            <h2 className="text-5xl md:text-6xl font-bold text-foreground mb-6 text-balance leading-tight">
               Gerenciamento Completo de <span className="text-primary">Clientes</span>
             </h2>
 
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-balance leading-relaxed">
+            <p className="text-md text-muted-foreground mb-8 max-w-2xl mx-auto text-balance leading-relaxed">
               Organize agendamentos, clientes, profissionais, financeiro, notas, checklist, metas e relatórios em uma única plataforma.
             </p>
 
