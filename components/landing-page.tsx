@@ -102,7 +102,7 @@ export default function LandingPage({ onLoginClick, onSignupClick }: LandingPage
               </p>
             </div>
 
-            <h2 className="text-4xl font-bold text-foreground mb-6 text-balance leading-tight">
+            <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance leading-tight">
               Gerenciamento Completo de <span className="text-primary">Clientes</span>
             </h2>
 
