@@ -347,12 +347,12 @@ export default function SupportTab() {
             <Mail className="w-6 h-6 text-blue-600" />
           </div>
           <h4 className="font-bold text-foreground mb-2">Email</h4>
-          <p className="text-sm text-muted-foreground mb-3">viraweb.online@gmail.com</p>
+          <p className="text-sm text-muted-foreground mb-3">suporte@viraweb.online</p>
           <Button
             variant="outline"
             size="sm"
             className="w-full bg-transparent"
-            onClick={() => window.open("mailto:viraweb.online@gmail.com", "_blank")}
+            onClick={() => window.open("mailto:suporte@viraweb.online", "_blank")}
           >
             <ExternalLink className="w-4 h-4 mr-2" />
             Enviar Email
