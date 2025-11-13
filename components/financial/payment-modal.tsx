@@ -229,42 +229,6 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
           </div>
 
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">Quitar pendente</label>
-            <div className="flex items-center gap-2">
-              <input
-                id="settle-pending"
-                type="checkbox"
-                checked={settlePending}
-                onChange={(e) => {
-                  const checked = e.target.checked
-                  setSettlePending(checked)
-                  if (checked) setStatus('paid')
-                }}
-              />
-              <label htmlFor="settle-pending" className="text-sm">Este pagamento deve quitar um pagamento pendente</label>
-            </div>
-
-            {settlePending && (
-              <div className="mt-2">
-                <label className="text-xs text-muted-foreground block mb-1">Selecione o pagamento pendente</label>
-                <Select value={selectedPendingPayment ?? "none"} onValueChange={(v) => setSelectedPendingPayment(v === 'none' ? null : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={pendingPayments.length ? 'Selecione o pendente' : 'Nenhum pendente encontrado'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {pendingPayments.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {`R$ ${Number(p.amount || 0).toFixed(2)} - ${p.due_date ? new Date(p.due_date).toLocaleDateString() : 'sem data'}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-
-          <div>
             <label className="text-sm text-muted-foreground mb-1 block">Data do Pagamento</label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
