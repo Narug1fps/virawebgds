@@ -28,6 +28,7 @@ export interface Payment {
   notes: string | null
   created_at: string
   updated_at: string
+  patients?: { id: string; name: string } | null
 }
 
 export interface SessionRow {
@@ -164,7 +165,7 @@ export async function recordPayment(payload: {
     // Fetch the inserted row explicitly (avoid expanded relations)
     const fetchRes = await supabase
       .from("payments")
-      .select("id, user_id, patient_id, appointment_id, amount, discount, currency, status, payment_date, due_date, notes, created_at, updated_at")
+      .select("id, user_id, patient_id, appointment_id, amount, discount, currency, status, payment_date, due_date, notes, created_at, updated_at, patients (id, name)")
       .eq("id", id)
       .eq("user_id", user.id)
       .limit(1)
@@ -220,7 +221,7 @@ export async function recordPayment(payload: {
         // Now try to fetch the inserted row by id using an explicit select (avoid expansions)
         const fetchRes = await supabase
           .from("payments")
-          .select("id, user_id, patient_id, appointment_id, amount, discount, currency, status, payment_date, due_date, notes, created_at, updated_at")
+          .select("id, user_id, patient_id, appointment_id, amount, discount, currency, status, payment_date, due_date, notes, created_at, updated_at, patients (id, name)")
           .eq("id", id)
           .eq("user_id", user.id)
           .limit(1)
@@ -244,6 +245,16 @@ export async function recordPayment(payload: {
             notes: payload.notes || null,
             created_at: createdAt,
             updated_at: createdAt,
+            patients: null,
+          }
+          // Try to fetch patient name to fill `patients` for UI convenience
+          if (payload.patient_id) {
+            try {
+              const pRes = await supabase.from('patients').select('id, name').eq('id', payload.patient_id).limit(1).single()
+              if (!(pRes as any).error) data.patients = (pRes as any).data
+            } catch (e) {
+              // ignore
+            }
           }
         } else {
           data = (fetchRes as any).data
@@ -348,14 +359,14 @@ export async function recordPayment(payload: {
         // fetch the inserted row by id
         const fetchRes = await supabase
           .from("payments")
-          .select("id, user_id, patient_id, appointment_id, amount, discount, currency, status, payment_date, due_date, notes, created_at, updated_at")
+          .select("id, user_id, patient_id, appointment_id, amount, discount, currency, status, payment_date, due_date, notes, created_at, updated_at, patients (id, name)")
           .eq("id", id)
           .eq("user_id", user.id)
           .limit(1)
           .single()
 
         if ((fetchRes as any).error) {
-          console.warn('Fetch after final minimal insert failed:', (fetchRes as any).error)
+          console.warn("Fetch after final minimal insert failed:", (fetchRes as any).error)
           const friendly = mapDbErrorToUserMessage(full)
           const message = process.env.NODE_ENV !== 'production' ? `${friendly}\n\n[DEBUG RAW] ${full}` : friendly
           throw new Error(message)

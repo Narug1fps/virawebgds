@@ -30,8 +30,13 @@ const columns: ColumnDef<Payment>[] = [
     },
   },
   {
-    accessorKey: "patient.name",
+    id: 'patient',
     header: "Cliente",
+    cell: ({ row }) => {
+      const orig: any = row.original
+      const name = orig?.patients?.name || orig?.patient?.name || "-"
+      return name
+    },
   },
   {
     accessorKey: "amount",
