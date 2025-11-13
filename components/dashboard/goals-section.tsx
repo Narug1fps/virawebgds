@@ -295,7 +295,6 @@ export function GoalsSection() {
                         <SelectItem value="clientes">Clientes</SelectItem>
                         <SelectItem value="agendamentos">Agendamentos</SelectItem>
                         <SelectItem value="profissionais">Profissionais</SelectItem>
-                        <SelectItem value="geral">Geral</SelectItem>
                       </SelectContent>
                   </Select>
                 </div>
