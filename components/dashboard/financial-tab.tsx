@@ -126,7 +126,7 @@ export default function FinancialTab() {
                 >
                   <div className="flex-1 flex flex-col sm:flex-row items-center gap-4">
                     <div className="flex flex-col items-start min-w-[160px]">
-                      <span className="font-semibold text-lg text-foreground">{payment.patient?.name || "-"}</span>
+                      <span className="font-semibold text-lg text-foreground">{(payment.patients?.name || payment.patient?.name) || "-"}</span>
                       <span className="text-xs text-muted-foreground">
                         {new Date(payment.payment_date).toLocaleDateString()}
                       </span>

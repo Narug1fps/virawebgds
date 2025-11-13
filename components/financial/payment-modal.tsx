@@ -172,6 +172,15 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
                 ))}
               </SelectContent>
             </Select>
+            {/* Mostrar nome do cliente selecionado para confirmação */}
+            {patientId && (
+              (() => {
+                const sel = patients.find((p) => p.id === patientId)
+                return sel ? (
+                  <p className="text-sm text-muted-foreground mt-2">Cliente selecionado: <span className="font-medium text-foreground">{sel.name}</span></p>
+                ) : null
+              })()
+            )}
           </div>
 
           <div>
