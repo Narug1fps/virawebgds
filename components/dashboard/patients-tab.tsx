@@ -284,7 +284,7 @@ export default function PatientsTab() {
               className="bg-background"
             />
             <Input
-              placeholder="CPF (opcional)"
+              placeholder="CPF"
               value={formData.cpf}
               onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
               className="bg-background"
