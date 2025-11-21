@@ -12,7 +12,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "ViraWeb - Gestor de Clientes",
   description: "Sistema completo de gerenciamento de clientes, agendamentos e profissionais",
-    generator: 'v0.app'
 }
 
 export default function RootLayout({
