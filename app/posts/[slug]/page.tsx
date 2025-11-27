@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Metadata } from 'next'
-import { generateMetadataForSlug } from '@/lib/seo'
-import Seo from '@/components/seo'
+import { generateMetadataForSlug } from '../../../lib/seo'
+import Seo from '../../../components/seo'
 
 type Params = { params: { slug: string } }
 
