@@ -22,12 +22,7 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL("https://viraweb.online"), // domínio de produção
   alternates: { canonical: "https://viraweb.online" },
-  robots: {
-    index: true,
-    follow: true,
-    nocache: false,
-    // maxSnippet/maxImagePreview/maxVideoPreview podem ser ajustados se necessário
-  },
+  robots: undefined,
   openGraph: {
     title: "ViraWeb — Gestor de Clientes e Agendamentos",
     description:
