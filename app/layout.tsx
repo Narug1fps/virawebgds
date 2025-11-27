@@ -117,7 +117,7 @@ export default function RootLayout({
       <link rel="shortcut icon" href="/viraweb6.ico" type="image/x-icon" />
       <link rel="manifest" href="/manifest.json" />
       <meta name="theme-color" content={process.env.NEXT_PUBLIC_THEME_COLOR || "#0ea5a4"} />
-      <link rel="apple-touch-icon" href={process.env.NEXT_PUBLIC_APPLE_TOUCH_ICON || "/icons/icon-192.svg"} />
+      <link rel="apple-touch-icon" href={process.env.NEXT_PUBLIC_APPLE_TOUCH_ICON || "/viraweb6.ico"} />
       <body className={`font-sans antialiased selection:bg-primary selection:text-white`}>
         {/*
           Inline script to set the initial theme class on the <html> element
