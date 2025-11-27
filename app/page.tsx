@@ -325,7 +325,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Image src="/viraweb6.ico" width={256} height={159} alt="" className="w-30" />
+          <Image src="/viraweb6.ico" width={256} height={159} alt="ViraWeb logo" className="w-30" />
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>

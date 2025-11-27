@@ -10,8 +10,52 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ViraWeb - Gestor de Clientes",
-  description: "Sistema completo de gerenciamento de clientes, agendamentos e profissionais",
+  title: "ViraWeb — Gestor de Clientes e Agendamentos",
+  description:
+    "ViraWeb é um sistema completo para clínicas e profissionais gerenciarem clientes, agendamentos e pagamentos.",
+  keywords: [
+    "gestão de clientes",
+    "agendamentos online",
+    "software para clínicas",
+    "profissionais de saúde",
+    "ViraWeb",
+  ],
+  metadataBase: new URL("https://viraweb.online"), // domínio de produção
+  alternates: { canonical: "https://viraweb.online" },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    // maxSnippet/maxImagePreview/maxVideoPreview podem ser ajustados se necessário
+  },
+  openGraph: {
+    title: "ViraWeb — Gestor de Clientes e Agendamentos",
+    description:
+      "Sistema para clínicas e profissionais gerenciarem clientes, agendamentos e cobranças.",
+    url: "https://viraweb.online",
+    siteName: "ViraWeb",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ViraWeb — Gestor de Clientes",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ViraWeb — Gestor de Clientes e Agendamentos",
+    description:
+      "Sistema para clínicas e profissionais gerenciarem clientes, agendamentos e cobranças.",
+    images: ["/og-image.png"],
+  },
+  icons: {
+    icon: "/viraweb6.ico",
+    shortcut: "/viraweb6.ico",
+    apple: "/apple-touch-icon.png",
+  },
 }
 
 export default function RootLayout({
@@ -21,6 +65,53 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
+      {/* JSON-LD: Organization & WebSite - atualize `url` e `logo` para seu domínio */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "ViraWeb",
+            url: "https://viraweb.online",
+            logo: "https://viraweb.online/viraweb6.ico",
+            sameAs: [],
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "ViraWeb",
+            url: "https://viraweb.online",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: "https://viraweb.online/?s={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Home",
+                item: "https://viraweb.online",
+              },
+            ],
+          }),
+        }}
+      />
       <link rel="shortcut icon" href="/viraweb6.ico" type="image/x-icon" />
       <body className={`font-sans antialiased selection:bg-primary selection:text-white`}>
         {/*

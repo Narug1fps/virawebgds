@@ -144,7 +144,7 @@ export default function Dashboard({ user, onLogout, subscription, isNewUser = fa
               {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
             <div className="flex items-center gap-3">
-              <Image width={512} height={512} alt="" src="/viraweb3.png" className="w-40" />
+                  <Image width={512} height={512} alt="ViraWeb logo" src="/viraweb3.png" className="w-40" />
             </div>
           </div>
 

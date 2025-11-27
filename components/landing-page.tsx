@@ -148,8 +148,8 @@ export default function LandingPage({ onLoginClick, onSignupClick }: LandingPage
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <a href="#">
-              <Image width={512} height={512} alt="" src="/viraweb3.png" className="w-40" />
+            <a href="#" aria-label="ViraWeb - Início">
+              <Image width={512} height={512} alt="ViraWeb logo" src="/viraweb3.png" className="w-40" />
             </a>
           </div>
           <div className="flex gap-3">
@@ -179,9 +179,9 @@ export default function LandingPage({ onLoginClick, onSignupClick }: LandingPage
               </p>
             </motion.div>
 
-            <motion.h2 className="text-5xl font-bold text-foreground mb-6 text-balance leading-tight" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
+            <motion.h1 className="text-5xl font-bold text-foreground mb-6 text-balance leading-tight" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
               Gerenciamento Completo de <span className="text-primary">Clientes</span>
-            </motion.h2>
+            </motion.h1>
 
             <motion.p className="text-md text-muted-foreground mb-8 max-w-2xl mx-auto text-balance leading-relaxed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.3 }}>
               Organize agendamentos, clientes, profissionais, financeiro, notas, checklist, metas e relatórios em uma única plataforma.
@@ -540,8 +540,8 @@ export default function LandingPage({ onLoginClick, onSignupClick }: LandingPage
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <a href="#">
-                  <Image width={512} height={512} alt="" src="/viraweb3.png" className="w-40" />
+                <a href="#" aria-label="ViraWeb - Início">
+                  <Image width={512} height={512} alt="ViraWeb logo" src="/viraweb3.png" className="w-40" />
                 </a>
               </div>
               <p className="text-sm text-muted-foreground">
