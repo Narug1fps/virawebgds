@@ -6,7 +6,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // removed redirect that caused potential redirect loops for reset-password
 }
 
-export default nextConfig
+module.exports = nextConfig

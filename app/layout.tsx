@@ -1,13 +1,15 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 import { Providers } from "./providers"
+import { Inter, JetBrains_Mono } from 'next/font/google'
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const inter = Inter({ subsets: ['latin'] })
+const mono = JetBrains_Mono({ subsets: ['latin'] })
+
+
 
 export const metadata: Metadata = {
   title: "ViraWeb — Gestor de Clientes e Agendamentos",
