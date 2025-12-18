@@ -1,8 +1,11 @@
 'use client'
 
+import { dynamic } from 'next/dynamic'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+
+export const dynamic = 'force-dynamic'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase-client'
 import { useRouter, useSearchParams } from 'next/navigation'
