@@ -17,54 +17,13 @@ export default function CookieConsent() {
     }
   }, [])
 
-  const accept = async () => {
+  const accept = () => {
     try {
       localStorage.setItem("vwd:consent_cookies", "true")
       setConsent("true")
 
-      try {
-        if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
-          window.dispatchEvent(new Event("vwd:consent_changed"))
-        }
-      } catch (e) {}
-
-      try {
-        const consentRes = await fetch("/api/consent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ consent: true }),
-        })
-        console.log("[CookieConsent] /api/consent response:", consentRes.status)
-      } catch (e) {
-        console.warn("[CookieConsent] failed to persist consent server-side", e)
-      }
-
-      try {
-        const redirectRes = await fetch("/api/ssr/redirect-check", {
-          method: "GET",
-          credentials: "same-origin",
-        })
-        if (redirectRes.ok) {
-          const json = await redirectRes.json()
-          const target: string | null = typeof json?.target === "string" ? json.target : null
-          console.log("[CookieConsent] redirect-check returned target:", target)
-          if (target) {
-            // parse for goto param
-            try {
-              const url = new URL(target, window.location.href)
-              const goto = url.searchParams.get("goto")
-              if (goto && typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
-                console.log("[CookieConsent] dispatching vwd:goto event with detail:", goto)
-                window.dispatchEvent(new CustomEvent("vwd:goto", { detail: goto }))
-              }
-            } catch (e) {
-              console.warn("[CookieConsent] failed to parse target URL", e)
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("[CookieConsent] failed to get redirect target", e)
+      if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new Event("vwd:consent_changed"))
       }
     } catch (e) {
       console.error("[CookieConsent] error in accept:", e)
@@ -75,19 +34,10 @@ export default function CookieConsent() {
     try {
       localStorage.setItem("vwd:consent_cookies", "false")
       setConsent("false")
-      try {
-        if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
-          window.dispatchEvent(new Event("vwd:consent_changed"))
-        }
-      } catch (e) {}
-      try {
-        fetch("/api/consent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ consent: false }),
-        })
-      } catch (e) {}
+
+      if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new Event("vwd:consent_changed"))
+      }
     } catch (e) {
       console.error("[CookieConsent] error in decline:", e)
     }
@@ -119,3 +69,4 @@ export default function CookieConsent() {
     </div>
   )
 }
+
