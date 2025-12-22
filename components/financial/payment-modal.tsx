@@ -58,7 +58,7 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
     }
   }, [open, defaultPatientId])
 
-  // Quando o paciente selecionado mudar, carregamos pagamentos pendentes
+  // Quando o cliente selecionado mudar, carregamos pagamentos pendentes
   useEffect(() => {
     if (!patientId) {
       setPendingPayments([])
@@ -151,7 +151,7 @@ export default function PaymentModal({ open, onOpenChange, onSaved, defaultPatie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-w-lg bg-popover dark:bg-slate-900">
+      <DialogContent className="max-w-lg bg-popover dark:bg-slate-900">
         <DialogHeader>
           <DialogTitle>Registrar Pagamento</DialogTitle>
         </DialogHeader>

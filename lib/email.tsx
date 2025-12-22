@@ -299,8 +299,8 @@ export function generateWelcomeEmail(data: { userName: string; userEmail: string
                 Gerencie seus agendamentos de forma fácil e rápida
               </div>
               <div class="feature">
-                <strong>👥 Pacientes</strong><br>
-                Mantenha o histórico completo de seus pacientes
+                <strong>👥 clientes</strong><br>
+                Mantenha o histórico completo de seus clientes
               </div>
               <div class="feature">
                 <strong>📊 Relatórios</strong><br>
@@ -333,7 +333,7 @@ Estamos muito felizes em tê-lo(a) conosco! Sua conta foi criada com sucesso.
 
 Recursos disponíveis:
 - 📅 Agendamentos: Gerencie seus agendamentos de forma fácil e rápida
-- 👥 Pacientes: Mantenha o histórico completo de seus pacientes
+- 👥 clientes: Mantenha o histórico completo de seus clientes
 - 📊 Relatórios: Acompanhe o desempenho da sua clínica
 - 🔔 Notificações: Receba lembretes automáticos de consultas
 

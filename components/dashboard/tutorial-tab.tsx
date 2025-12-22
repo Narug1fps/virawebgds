@@ -20,7 +20,7 @@ function getEmbedUrl(url: string) {
       const id = u.pathname.replace(/^\//, '')
       if (id) return `https://www.youtube.com/embed/${id}`
     }
-  } catch (e) {}
+  } catch (e) { }
   // fallback: return original (may already be an embed URL)
   return url
 }
@@ -169,8 +169,8 @@ export default function TutorialTab({ onMarkWatched }: { onMarkWatched?: () => v
               <CheckCircle2 className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h4 className="font-medium">Gerenciamento de Pacientes</h4>
-              <p className="text-sm text-muted-foreground">Como adicionar e gerenciar seus pacientes</p>
+              <h4 className="font-medium">Gerenciamento de clientes</h4>
+              <p className="text-sm text-muted-foreground">Como adicionar e gerenciar seus clientes</p>
             </div>
           </div>
           <div className="flex items-start gap-3">

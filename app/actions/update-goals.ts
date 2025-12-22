@@ -9,7 +9,7 @@ export async function updateGoalsForAction(action: {
   value?: number
 }) {
   const supabase = await createClient()
-  
+
   const {
     data: { user },
     error: authError,
@@ -22,7 +22,7 @@ export async function updateGoalsForAction(action: {
   // Mapeia o tipo de ação para a categoria da meta
   const categoryMap = {
     appointment: "agendamentos",
-    patient: "clientes", // Alterado de "pacientes" para "clientes"
+    patient: "clientes", // Alterado de "clientes" para "clientes"
     payment: "financeiro",
     professional: "profissionais"
   }
@@ -49,7 +49,7 @@ export async function updateGoalsForAction(action: {
 
         return supabase
           .from("goals")
-          .update({ 
+          .update({
             current_value: newValue,
             status,
             updated_at: new Date().toISOString()

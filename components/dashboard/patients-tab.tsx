@@ -105,13 +105,31 @@ export default function PatientsTab() {
 
     try {
       if (editingId) {
-        await updatePatient(editingId, formData)
+        const result = await updatePatient(editingId, formData)
+        if (!result.success) {
+          toast({
+            title: "Erro ao atualizar cliente",
+            description: result.error,
+            variant: "destructive",
+          })
+          setSaving(false)
+          return
+        }
         toast({
           title: "Cliente atualizado",
           description: "As informações foram atualizadas com sucesso",
         })
       } else {
-        await createPatient(formData)
+        const result = await createPatient(formData)
+        if (!result.success) {
+          toast({
+            title: "Erro ao salvar cliente",
+            description: result.error,
+            variant: "destructive",
+          })
+          setSaving(false)
+          return
+        }
         toast({
           title: "Cliente criado",
           description: "Novo cliente adicionado com sucesso",
@@ -136,7 +154,7 @@ export default function PatientsTab() {
         })
       }
     }
-    finally{
+    finally {
       setSaving(false)
     }
   }
@@ -284,7 +302,7 @@ export default function PatientsTab() {
               className="bg-background"
             />
             <Input
-              placeholder="CPF"
+              placeholder="CPF (opcional)"
               value={formData.cpf}
               onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
               className="bg-background"
@@ -380,9 +398,8 @@ export default function PatientsTab() {
                     <div className="flex-1">
                       <h3 className="font-bold text-foreground text-lg">{patient.name}</h3>
                       <span
-                        className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                          patient.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-                        }`}
+                        className={`text-xs font-semibold px-2 py-1 rounded-full ${patient.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                          }`}
                       >
                         {patient.status === "active" ? "Ativo" : "Inativo"}
                       </span>
@@ -408,15 +425,15 @@ export default function PatientsTab() {
                         CPF: {patient.cpf}
                       </div>
                     )}
-{(patient.date_of_birth || patient.birthday) && (
-  <div className="text-sm text-muted-foreground">
-    Nascimento: {
-      new Date(
-        `${(patient.birthday ?? patient.date_of_birth) || ""}T00:00:00`
-      ).toLocaleDateString("pt-BR")
-    }
-  </div>
-)}
+                    {(patient.date_of_birth || patient.birthday) && (
+                      <div className="text-sm text-muted-foreground">
+                        Nascimento: {
+                          new Date(
+                            `${(patient.birthday ?? patient.date_of_birth) || ""}T00:00:00`
+                          ).toLocaleDateString("pt-BR")
+                        }
+                      </div>
+                    )}
                   </div>
 
                   {patient.address && <p className="text-sm text-muted-foreground mb-2">Endereço: {patient.address}</p>}

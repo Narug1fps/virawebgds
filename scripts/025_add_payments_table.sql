@@ -31,7 +31,7 @@ CREATE TRIGGER update_payments_timestamp
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Função para atualizar o contador de pagamentos do paciente
+-- Função para atualizar o contador de pagamentos do cliente
 CREATE OR REPLACE FUNCTION update_patient_payment_count()
 RETURNS TRIGGER AS $$
 BEGIN

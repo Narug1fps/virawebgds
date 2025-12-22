@@ -30,7 +30,7 @@ export default function SeoGestorDeClinica() {
       description="Gerencie agenda, equipe, salas e faturamento com uma plataforma integrada."
       slug="gestor-de-clinica"
       ogTitle="Gestão para Clínicas | Agenda, Faturamento e Relatórios"
-      ogDescription="Plataforma completa para gerenciar pacientes, equipe e finanças."
+      ogDescription="Plataforma completa para gerenciar clientes, equipe e finanças."
       jsonLd={jsonLd}
     />
   )

@@ -170,13 +170,13 @@ export async function exportFinancialData(period: "week" | "month" | "quarter" |
   // Formatar dados para exportação
   return payments.map((p: any) => ({
     data_pagamento: p.payment_date ? new Date(p.payment_date).toLocaleDateString("pt-BR") : "-",
-    paciente: p.patients?.name || "-",
+    cliente: p.patients?.name || "-",
     valor: Number(p.amount).toFixed(2),
     desconto: Number(p.discount || 0).toFixed(2),
     status: p.status === "paid" ? "Pago" :
-            p.status === "pending" ? "Pendente" :
-            p.status === "overdue" ? "Atrasado" :
-            p.status === "refunded" ? "Reembolsado" : "-",
+      p.status === "pending" ? "Pendente" :
+        p.status === "overdue" ? "Atrasado" :
+          p.status === "refunded" ? "Reembolsado" : "-",
     vencimento: p.due_date ? new Date(p.due_date).toLocaleDateString("pt-BR") : "-",
     observacoes: p.notes || "-"
   }))

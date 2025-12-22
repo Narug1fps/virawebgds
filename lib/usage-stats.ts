@@ -37,64 +37,75 @@ export interface LimitCheckResult {
  * Get comprehensive usage statistics for the current user
  */
 export async function getUserUsageStats(planType: PlanType): Promise<UsageStats> {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error("User not authenticated")
+  const emptyStats: UsageStats = {
+    patients: { current: 0, limit: 0, percentage: 0, remaining: 0 },
+    professionals: { current: 0, limit: 0, percentage: 0, remaining: 0 },
+    appointments: { current: 0, limit: 0, percentage: 0, remaining: 0, resetDate: "" },
   }
 
-  // Get patients count
-  const { count: patientsCount } = await supabase
-    .from("patients")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
+  try {
+    const supabase = await createClient()
 
-  // Get professionals count
-  const { count: professionalsCount } = await supabase
-    .from("professionals")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  // Get appointments count for current month
-  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]
-  const { count: appointmentsCount } = await supabase
-    .from("appointments")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .gte("appointment_date", firstDayOfMonth)
+    if (!user) {
+      return emptyStats
+    }
 
-  const planLimits = PLAN_LIMITS[planType]
+    // Get patients count
+    const { count: patientsCount } = await supabase
+      .from("patients")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
 
-  // Calculate next month reset date
-  const nextMonth = new Date()
-  nextMonth.setMonth(nextMonth.getMonth() + 1)
-  nextMonth.setDate(1)
-  const resetDate = nextMonth.toISOString().split("T")[0]
+    // Get professionals count
+    const { count: professionalsCount } = await supabase
+      .from("professionals")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
 
-  return {
-    patients: {
-      current: patientsCount || 0,
-      limit: planLimits.patients,
-      percentage: calculatePercentage(patientsCount || 0, planLimits.patients),
-      remaining: calculateRemaining(patientsCount || 0, planLimits.patients),
-    },
-    professionals: {
-      current: professionalsCount || 0,
-      limit: planLimits.professionals,
-      percentage: calculatePercentage(professionalsCount || 0, planLimits.professionals),
-      remaining: calculateRemaining(professionalsCount || 0, planLimits.professionals),
-    },
-    appointments: {
-      current: appointmentsCount || 0,
-      limit: planLimits.appointmentsPerMonth,
-      percentage: calculatePercentage(appointmentsCount || 0, planLimits.appointmentsPerMonth),
-      remaining: calculateRemaining(appointmentsCount || 0, planLimits.appointmentsPerMonth),
-      resetDate,
-    },
+    // Get appointments count for current month
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]
+    const { count: appointmentsCount } = await supabase
+      .from("appointments")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("appointment_date", firstDayOfMonth)
+
+    const planLimits = PLAN_LIMITS[planType]
+
+    // Calculate next month reset date
+    const nextMonth = new Date()
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    nextMonth.setDate(1)
+    const resetDate = nextMonth.toISOString().split("T")[0]
+
+    return {
+      patients: {
+        current: patientsCount || 0,
+        limit: planLimits.patients,
+        percentage: calculatePercentage(patientsCount || 0, planLimits.patients),
+        remaining: calculateRemaining(patientsCount || 0, planLimits.patients),
+      },
+      professionals: {
+        current: professionalsCount || 0,
+        limit: planLimits.professionals,
+        percentage: calculatePercentage(professionalsCount || 0, planLimits.professionals),
+        remaining: calculateRemaining(professionalsCount || 0, planLimits.professionals),
+      },
+      appointments: {
+        current: appointmentsCount || 0,
+        limit: planLimits.appointmentsPerMonth,
+        percentage: calculatePercentage(appointmentsCount || 0, planLimits.appointmentsPerMonth),
+        remaining: calculateRemaining(appointmentsCount || 0, planLimits.appointmentsPerMonth),
+        resetDate,
+      },
+    }
+  } catch (err) {
+    console.error("Critical error in getUserUsageStats:", err)
+    return emptyStats
   }
 }
 

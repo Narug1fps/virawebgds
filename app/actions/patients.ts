@@ -27,29 +27,34 @@ export interface Patient {
 }
 
 export async function getPatients() {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (authError || !user) {
-    throw new Error("User not authenticated")
+    if (authError || !user) {
+      throw new Error("Usuário não autenticado.")
+    }
+
+    const { data, error } = await supabase
+      .from("patients")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error(" Error fetching patients:", error)
+      throw new Error("Falha ao carregar clientes.")
+    }
+
+    return data as Patient[]
+  } catch (err) {
+    console.error("Critical error in getPatients:", err)
+    throw err // For internal usage it might be okay to throw if caught by parent, but let's be safe
   }
-
-  const { data, error } = await supabase
-    .from("patients")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error(" Error fetching patients:", error)
-    throw new Error("Failed to fetch patients")
-  }
-
-  return data as Patient[]
 }
 
 export async function getPatientById(patientId: string) {
@@ -90,70 +95,87 @@ export async function createPatient(patientData: {
   notes?: string
   profile_photo_url?: string
 }) {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (authError || !user) {
-    throw new Error("User not authenticated")
-  }
-
-  const subscription = await getUserSubscription()
-  const planType = (subscription?.plan_type?.toLowerCase() as "basic" | "premium" | "master") || "basic"
-
-  const limitCheck = await checkLimit(planType, "patients")
-
-  if (!limitCheck.allowed) {
-    throw new Error(limitCheck.message || "Limite de clientes atingido.")
-  }
-
-  // normalize payload: don't insert empty cpf (use null) to avoid unique/constraint issues
-  const insertPayload: any = {
-    user_id: user.id,
-    name: patientData.name,
-    email: patientData.email || null,
-    phone: patientData.phone || null,
-    cpf: patientData.cpf && patientData.cpf.trim() !== "" ? patientData.cpf.trim() : null,
-    date_of_birth: patientData.date_of_birth || null,
-    address: patientData.address || null,
-    notes: patientData.notes || null,
-    profile_photo_url: patientData.profile_photo_url || null,
-    status: "active",
-  }
-
-  const { data, error } = await supabase.from("patients").insert(insertPayload).select().single()
-
-  if (error) {
-    console.error(" Error creating patient:", error)
-    // Build a detailed error message to return to the client for debugging
-    const parts = [error.message, (error as any).details, (error as any).hint, (error as any).code]
-      .filter(Boolean)
-      .map(String)
-    const fullMessage = parts.join(" | ") || "Failed to create patient"
-
-    // If the DB is missing the `birthday` column (PGRST204), give a clear user-facing message
-    if (/Could not find the 'birthday' column|PGRST204/i.test(fullMessage)) {
-      throw new Error("Erro ao criar cliente: problema no servidor relacionado ao campo de aniversário. Tente salvar sem informar a data de aniversário ou atualize o banco de dados.")
+    if (authError || !user) {
+      return { success: false, error: "Usuário não autenticado." }
     }
 
-    // friendly message when CPF-related constraint fails
-    if (/cpf|duplicate|unique|constraint/i.test(fullMessage)) {
-      throw new Error("Erro ao criar cliente: CPF inválido ou já cadastrado. O CPF é opcional — tente deixar em branco.")
+    const subscription = await getUserSubscription()
+    const planType = (subscription?.plan_type?.toLowerCase() as "basic" | "premium" | "master") || "basic"
+
+    const limitCheck = await checkLimit(planType, "patients")
+
+    if (!limitCheck.allowed) {
+      return { success: false, error: limitCheck.message || "Limite de clientes atingido." }
     }
 
-    // return the real DB error to the client to aid debugging
-    throw new Error(fullMessage)
+    // normalize payload: don't insert empty cpf to avoid unique/constraint issues
+    const insertPayload: any = {
+      user_id: user.id,
+      name: patientData.name,
+      email: patientData.email || null,
+      phone: patientData.phone || null,
+      date_of_birth: patientData.date_of_birth || null,
+      address: patientData.address || null,
+      notes: patientData.notes || null,
+      profile_photo_url: patientData.profile_photo_url || null,
+      status: "active",
+      payment_status: "pending",
+    }
+
+    // Only include cpf if it has a value - don't send null to avoid UNIQUE constraint issues
+    if (patientData.cpf && patientData.cpf.trim() !== "") {
+      insertPayload.cpf = patientData.cpf.trim()
+    }
+
+    const { data, error } = await supabase.from("patients").insert(insertPayload).select().single()
+
+    if (error) {
+      console.error(" Error creating patient:", error)
+      const parts = [error.message, (error as any).details, (error as any).hint, (error as any).code]
+        .filter(Boolean)
+        .map(String)
+      const fullMessage = parts.join(" | ") || "Failed to create patient"
+
+      if (/Could not find the 'birthday' column|PGRST204/i.test(fullMessage)) {
+        return { success: false, error: "Erro ao criar cliente: problema no servidor relacionado ao campo de aniversário." }
+      }
+
+      // Check if the error is specifically related to CPF
+      if (/\bcpf\b/i.test(fullMessage)) {
+        if (patientData.cpf && patientData.cpf.trim() !== "") {
+          return { success: false, error: "Este CPF já está cadastrado para outro cliente." }
+        }
+      }
+
+      // Check for duplicate/unique violations (but not generic constraint errors)
+      if (/duplicate|unique.*violation|already exists/i.test(fullMessage)) {
+        return { success: false, error: "Erro ao criar cliente: um dos dados informados já está cadastrado." }
+      }
+
+      // Check for payment_status constraint
+      if (/payment_status/i.test(fullMessage)) {
+        return { success: false, error: "Erro ao criar cliente: problema com o status de pagamento." }
+      }
+
+      return { success: false, error: fullMessage }
+    }
+
+    await createNotification("Cliente Adicionado", `${patientData.name} foi adicionado com sucesso.`, "success")
+    await updateGoalsForAction({ type: "patient" })
+
+    return { success: true, data: data as Patient }
+  } catch (err) {
+    console.error("Critical error in createPatient action:", err)
+    return { success: false, error: err instanceof Error ? err.message : "Erro interno no servidor." }
   }
-
-  await createNotification("Cliente Adicionado", `${patientData.name} foi adicionado com sucesso.`, "success")
-
-  // Atualiza as metas de clientes
-  await updateGoalsForAction({ type: "patient" })
-
-  return data as Patient
 }
 
 export async function updatePatient(
@@ -170,40 +192,52 @@ export async function updatePatient(
     profile_photo_url?: string
   },
 ) {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (authError || !user) {
-    throw new Error("User not authenticated")
+    if (authError || !user) {
+      return { success: false, error: "Usuário não autenticado." }
+    }
+
+    // normalize payload: convert empty strings to null for date and optional fields
+    const updatePayload: any = {
+      name: patientData.name,
+      email: patientData.email || null,
+      phone: patientData.phone || null,
+      date_of_birth: patientData.date_of_birth && patientData.date_of_birth.trim() !== "" ? patientData.date_of_birth : null,
+      birthday: patientData.birthday && patientData.birthday.trim() !== "" ? patientData.birthday : null,
+      address: patientData.address || null,
+      notes: patientData.notes || null,
+      profile_photo_url: patientData.profile_photo_url || null,
+      updated_at: new Date().toISOString(),
+    }
+
+    // Only include cpf if provided and not empty
+    if (patientData.cpf && patientData.cpf.trim() !== "") {
+      updatePayload.cpf = patientData.cpf.trim()
+    } else {
+      updatePayload.cpf = null
+    }
+
+    const { data, error } = await supabase.from("patients").update(updatePayload).eq("id", patientId).eq("user_id", user.id).select().single()
+
+    if (error) {
+      console.error(" Error updating patient:", error)
+      return { success: false, error: "Falha ao atualizar cliente: " + error.message }
+    }
+
+    await createNotification("Cliente Atualizado", `${patientData.name} foi atualizado com sucesso.`, "info")
+
+    return { success: true, data: data as Patient }
+  } catch (err) {
+    console.error("Critical error in updatePatient:", err)
+    return { success: false, error: "Erro interno no servidor." }
   }
-
-  // normalize cpf: convert empty string to null to avoid constraint issues
-  const updatePayload: any = {
-    ...patientData,
-    date_of_birth: patientData.date_of_birth || null,
-    address: patientData.address || null,
-    notes: patientData.notes || null,
-    profile_photo_url: patientData.profile_photo_url || null,
-    updated_at: new Date().toISOString(),
-  }
-  if (Object.prototype.hasOwnProperty.call(patientData, "cpf")) {
-    updatePayload.cpf = patientData.cpf && patientData.cpf.trim() !== "" ? patientData.cpf.trim() : null
-  }
-
-  const { data, error } = await supabase.from("patients").update(updatePayload).eq("id", patientId).eq("user_id", user.id).select().single()
-
-  if (error) {
-    console.error(" Error updating patient:", error)
-    throw new Error("Failed to update patient")
-  }
-
-  await createNotification("Cliente Atualizado", `${patientData.name} foi atualizado com sucesso.`, "info")
-
-  return data as Patient
 }
 
 export async function updatePatientNotes(patientId: string, notes: string) {
@@ -287,7 +321,7 @@ export async function deletePatient(patientId: string) {
     throw new Error("Failed to delete patient")
   }
 
-  await createNotification("Paciente Removido", "Paciente foi removido com sucesso.", "info")
+  await createNotification("cliente Removido", "cliente foi removido com sucesso.", "info")
 
   return { success: true }
 }
@@ -348,7 +382,7 @@ export async function checkOverduePayments() {
   for (const patient of data) {
     await createNotification(
       "Pagamento Atrasado",
-      `Paciente ${patient.name} está com pagamento atrasado desde ${new Date(patient.payment_due_date!).toLocaleDateString("pt-BR")}.`,
+      `cliente ${patient.name} está com pagamento atrasado desde ${new Date(patient.payment_due_date!).toLocaleDateString("pt-BR")}.`,
       "warning",
     )
   }

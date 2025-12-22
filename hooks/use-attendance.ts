@@ -74,10 +74,10 @@ export function useAttendance(patientId: string | null): UseAttendanceReturn {
 
   const loadAttendance = async (retryCount = 0) => {
     if (!patientId) {
-      setError("ID do paciente não fornecido")
+      setError("ID do cliente não fornecido")
       return
     }
-    
+
     setLoading(true)
     setError(null)
 
@@ -209,10 +209,10 @@ export function useAttendance(patientId: string | null): UseAttendanceReturn {
       const absent = processedRecords.filter(r => r.status === "absent").length
       const late = processedRecords.filter(r => r.status === "late").length
       const cancelled = processedRecords.filter(r => r.status === "cancelled").length
-  // Count only records with a payment whose status is 'paid'.
-  // Previously we counted any record with a paymentId which made
-  // 'pending' payments appear as paid in the UI.
-  const paid = processedRecords.filter(r => r.payment && r.payment.status === 'paid').length
+      // Count only records with a payment whose status is 'paid'.
+      // Previously we counted any record with a paymentId which made
+      // 'pending' payments appear as paid in the UI.
+      const paid = processedRecords.filter(r => r.payment && r.payment.status === 'paid').length
 
       setStats({
         total,
@@ -237,7 +237,7 @@ export function useAttendance(patientId: string | null): UseAttendanceReturn {
     payment?: Omit<PaymentData, 'id'>
   }) => {
     if (!patientId) {
-      throw new Error("ID do paciente não fornecido")
+      throw new Error("ID do cliente não fornecido")
     }
 
     try {
@@ -313,18 +313,18 @@ export function useAttendance(patientId: string | null): UseAttendanceReturn {
               .update({ payment_status: 'pending', payment_due_date: paymentDateStr })
               .eq('id', patientId)
 
-            if (patientUpdateError) console.error('Erro ao atualizar paciente (pending):', patientUpdateError)
+            if (patientUpdateError) console.error('Erro ao atualizar cliente (pending):', patientUpdateError)
           } else if (payStatus === 'paid') {
             const { error: patientUpdateError } = await supabase
               .from('patients')
               .update({ payment_status: 'paid', last_payment_date: paymentDateStr })
               .eq('id', patientId)
 
-            if (patientUpdateError) console.error('Erro ao atualizar paciente (paid):', patientUpdateError)
+            if (patientUpdateError) console.error('Erro ao atualizar cliente (paid):', patientUpdateError)
           }
         }
       } catch (patientErr) {
-        console.error('Erro ao persistir resumo financeiro no paciente:', patientErr)
+        console.error('Erro ao persistir resumo financeiro no cliente:', patientErr)
         // don't block the main flow if patient update fails
       }
 
@@ -342,7 +342,7 @@ export function useAttendance(patientId: string | null): UseAttendanceReturn {
   }, [patientId])
 
   const isDateScheduled = (date: Date) => {
-    return appointments.some(a => 
+    return appointments.some(a =>
       a.date.getFullYear() === date.getFullYear() &&
       a.date.getMonth() === date.getMonth() &&
       a.date.getDate() === date.getDate()

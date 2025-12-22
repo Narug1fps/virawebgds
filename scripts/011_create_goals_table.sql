@@ -6,10 +6,10 @@ CREATE TABLE IF NOT EXISTS goals (
   description TEXT,
   target_value NUMERIC,
   current_value NUMERIC DEFAULT 0,
-  unit TEXT, -- e.g., "pacientes", "consultas", "R$"
+  unit TEXT, -- e.g., "clientes", "consultas", "R$"
   deadline DATE,
   status TEXT DEFAULT 'em_progresso' CHECK (status IN ('em_progresso', 'concluida', 'cancelada')),
-  category TEXT, -- e.g., "financeiro", "pacientes", "profissionais", "geral"
+  category TEXT, -- e.g., "financeiro", "clientes", "profissionais", "geral"
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

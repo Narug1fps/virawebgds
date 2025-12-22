@@ -24,7 +24,7 @@ const plans: Plan[] = [
     period: "mês",
     description: "Perfeito para profissionais solo",
     features: [
-      { name: "Até 100 pacientes", included: true },
+      { name: "Até 100 clientes", included: true },
       { name: "Até 5 profissionais", included: true },
       { name: "Agendamentos ilimitados", included: true },
       { name: "Relatórios básicos", included: true },
@@ -42,7 +42,7 @@ const plans: Plan[] = [
     description: "Para empresas em crescimento",
     highlighted: true,
     features: [
-      { name: "Até 500 pacientes", included: true },
+      { name: "Até 500 clientes", included: true },
       { name: "Até 20 profissionais", included: true },
       { name: "Agendamentos ilimitados", included: true },
       { name: "Relatórios avançados", included: true },
@@ -59,7 +59,7 @@ const plans: Plan[] = [
     period: "mês",
     description: "Recursos completos para grandes empresas",
     features: [
-      { name: "Pacientes ilimitados", included: true },
+      { name: "clientes ilimitados", included: true },
       { name: "Profissionais ilimitados", included: true },
       { name: "Agendamentos ilimitados", included: true },
       { name: "Relatórios avançados", included: true },
@@ -101,11 +101,10 @@ export default function PricingPage() {
           {plans.map((plan) => (
             <Card
               key={plan.id}
-              className={`relative border-2 transition-all duration-300 hover:shadow-xl ${
-                plan.highlighted
+              className={`relative border-2 transition-all duration-300 hover:shadow-xl ${plan.highlighted
                   ? "border-primary bg-gradient-to-br from-primary/5 to-secondary/5 md:scale-105"
                   : "border-border hover:border-primary/50"
-              }`}
+                }`}
             >
               {plan.highlighted && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-bold">
@@ -129,11 +128,10 @@ export default function PricingPage() {
                 {/* CTA Button */}
                 <Button
                   onClick={() => handleSelectPlan(plan.id)}
-                  className={`w-full mb-8 font-semibold py-6 ${
-                    plan.highlighted
+                  className={`w-full mb-8 font-semibold py-6 ${plan.highlighted
                       ? "bg-primary hover:bg-primary/90 text-primary-foreground"
                       : "bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                  }`}
+                    }`}
                 >
                   {selectedPlan === plan.id ? "Selecionado" : "Escolher Plano"}
                 </Button>
@@ -149,9 +147,8 @@ export default function PricingPage() {
                         <X className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                       )}
                       <span
-                        className={`text-sm ${
-                          feature.included ? "text-foreground" : "text-muted-foreground line-through"
-                        }`}
+                        className={`text-sm ${feature.included ? "text-foreground" : "text-muted-foreground line-through"
+                          }`}
                       >
                         {feature.name}
                       </span>
@@ -187,12 +184,12 @@ export default function PricingPage() {
             <Card className="p-6 border border-border">
               <h3 className="font-bold text-foreground mb-2">O plano Master tem recursos ilimitados?</h3>
               <p className="text-muted-foreground">
-                Sim! O plano Master oferece pacientes e profissionais ilimitados, além de todos os recursos avançados e
+                Sim! O plano Master oferece clientes e profissionais ilimitados, além de todos os recursos avançados e
                 suporte prioritário 24/7.
               </p>
             </Card>
 
-           
+
 
             <Card className="p-6 border border-border">
               <h3 className="font-bold text-foreground mb-2">Como funciona o suporte?</h3>
@@ -204,7 +201,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        
+
       </div>
     </div>
   )

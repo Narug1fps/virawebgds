@@ -49,7 +49,7 @@ export async function getRecentPayments(limit = 10) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) throw new Error("User not authenticated")
 
-    const { data, error } = await supabase
+  const { data, error } = await supabase
     .from("payments")
     .select(`
       id,
@@ -373,7 +373,7 @@ export async function recordPayment(payload: {
         }
 
         data = (fetchRes as any).data
-        } catch (e) {
+      } catch (e) {
         // If everything failed, map and throw as before
         console.error('Final fallback sequence failed:', e)
         const friendly = mapDbErrorToUserMessage(full)
@@ -400,8 +400,8 @@ export async function recordPayment(payload: {
       if (count === 0) {
         // Not persisted: try one last minimal insert and then re-verify.
         console.warn("Payment not found after insert attempts — trying one last minimal insert...")
-          try {
-            const last = await (supabase.from("payments") as any).insert([
+        try {
+          const last = await (supabase.from("payments") as any).insert([
             {
               id,
               user_id: user.id,
@@ -421,7 +421,7 @@ export async function recordPayment(payload: {
               created_at: createdAt,
               updated_at: createdAt,
             },
-                ], { returning: 'minimal' })
+          ], { returning: 'minimal' })
 
           if ((last as any).error) {
             console.error("Final insert attempt failed:", (last as any).error)
@@ -551,14 +551,14 @@ export async function getFinancialSummary(period: "daily" | "weekly" | "monthly"
   let totalDiscounts = 0
   let totalPending = 0
 
-    data?.forEach((p: any) => {
-      const amt = Number(p.amount || 0)
-      const disc = Number(p.discount || 0)
-      // Para recebidos: soma o valor líquido (amount - discount) quando estiver pago
-      if (p.status === "paid") totalReceived += Math.max(0, amt - disc)
-      if (disc) totalDiscounts += disc
-      if (p.status === "pending" || p.status === "overdue") totalPending += Math.max(0, amt - disc)
-    })
+  data?.forEach((p: any) => {
+    const amt = Number(p.amount || 0)
+    const disc = Number(p.discount || 0)
+    // Para recebidos: soma o valor líquido (amount - discount) quando estiver pago
+    if (p.status === "paid") totalReceived += Math.max(0, amt - disc)
+    if (disc) totalDiscounts += disc
+    if (p.status === "pending" || p.status === "overdue") totalPending += Math.max(0, amt - disc)
+  })
 
   return { totalReceived, totalDiscounts, totalPending }
 }
@@ -713,7 +713,7 @@ export async function getFinancialReport(period: "daily" | "weekly" | "monthly")
   start.setMonth(start.getMonth() - (months - 1))
   start.setDate(1)
   start.setHours(0, 0, 0, 0)
-  
+
   // First get subscription data to know which months had active subscriptions
   const { data: subscriptionData } = await supabase
     .from("subscriptions")
@@ -743,17 +743,17 @@ export async function getFinancialReport(period: "daily" | "weekly" | "monthly")
   })
 
   const out: { month: string; total: number }[] = []
-  
+
   // Function to check if a date falls within subscription periods
   const isDateInSubscriptionPeriod = (date: Date): boolean => {
     if (!subscriptionData || subscriptionData.length === 0) return false
-    
+
     return subscriptionData.some(sub => {
       const startDate = new Date(sub.created_at)
-      const endDate = sub.cancel_at ? new Date(sub.cancel_at) : 
-                     sub.current_period_end ? new Date(sub.current_period_end) : 
-                     new Date() // if no end date, subscription is still active
-      
+      const endDate = sub.cancel_at ? new Date(sub.cancel_at) :
+        sub.current_period_end ? new Date(sub.current_period_end) :
+          new Date() // if no end date, subscription is still active
+
       return date >= startDate && date <= endDate && sub.status === 'active'
     })
   }
@@ -763,7 +763,7 @@ export async function getFinancialReport(period: "daily" | "weekly" | "monthly")
     d.setMonth(d.getMonth() - (months - 1 - i))
     // Check the middle of the month to determine if subscription was active
     d.setDate(15)
-    
+
     // Only include months where subscription was active
     if (isDateInSubscriptionPeriod(d)) {
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
@@ -774,7 +774,7 @@ export async function getFinancialReport(period: "daily" | "weekly" | "monthly")
   return out
 }
 
-// ✅ RESUMO FINANCEIRO POR PACIENTE
+// ✅ RESUMO FINANCEIRO POR cliente
 export async function getPatientFinancialSummary(patientId: string) {
   const supabase = await createClient()
 
@@ -811,7 +811,7 @@ export async function getPatientFinancialSummary(patientId: string) {
   return { paid, due, discounts }
 }
 
-// ✅ RETORNA PAGAMENTOS PENDENTES/ATRASADOS DE UM PACIENTE
+// ✅ RETORNA PAGAMENTOS PENDENTES/ATRASADOS DE UM cliente
 export async function getPendingPaymentsForPatient(patientId: string) {
   const supabase = await createClient()
   const {
@@ -890,7 +890,7 @@ export async function getAllPendingPayments(limit = 100) {
   return data || []
 }
 
-// ✅ LISTA DE PACIENTES COM DÉBITOS
+// ✅ LISTA DE clientes COM DÉBITOS
 export async function getOutstandingPatients() {
   const supabase = await createClient()
 

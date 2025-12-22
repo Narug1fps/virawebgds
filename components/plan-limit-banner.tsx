@@ -45,7 +45,7 @@ export default function PlanLimitBanner({ currentCount, limitType, onUpgrade }: 
   if (!isNearLimit) return null
 
   const labels = {
-    patients: "pacientes",
+    patients: "clientes",
     professionals: "profissionais",
     appointmentsPerMonth: "agendamentos este mês",
   }

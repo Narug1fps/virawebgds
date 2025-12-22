@@ -96,7 +96,7 @@ export default function ReportsTab() {
           Relatórios
         </h2>
         <p className="text-sm text-muted-foreground">
-          Visão geral de agendamentos e pacientes.
+          Visão geral de agendamentos e clientes.
         </p>
       </div>
 
@@ -122,7 +122,7 @@ export default function ReportsTab() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Pacientes Ativos
+              clientes Ativos
             </CardTitle>
             <Users className="h-5 w-5 text-emerald-500" />
           </CardHeader>
@@ -198,7 +198,7 @@ export default function ReportsTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Crescimento de Pacientes</CardTitle>
+            <CardTitle>Crescimento de clientes</CardTitle>
           </CardHeader>
           <CardContent className="pl-2"> {/* Padding ajustado para o gráfico */}
             {patientData.length > 0 ? (

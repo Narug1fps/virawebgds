@@ -23,58 +23,66 @@ export interface UserSubscription {
 }
 
 export async function getCurrentPlan(): Promise<"basic" | "premium" | "master"> {
-  const subscription = await getUserSubscription()
+  try {
+    const subscription = await getUserSubscription()
 
-  if (!subscription || subscription.status !== "active") {
+    if (!subscription || subscription.status !== "active") {
+      return "basic"
+    }
+
+    const planType = (subscription.plan_name || subscription.plan_type)?.toLowerCase() as "basic" | "premium" | "master"
+
+    if (!["basic", "premium", "master"].includes(planType)) {
+      console.error(" Invalid plan type detected:", subscription.plan_name)
+      return "basic"
+    }
+
+    return planType
+  } catch (err) {
+    console.error("Error in getCurrentPlan:", err)
     return "basic"
   }
-
-  const planType = (subscription.plan_name || subscription.plan_type)?.toLowerCase() as "basic" | "premium" | "master"
-
-  // Validate plan type
-  if (!["basic", "premium", "master"].includes(planType)) {
-    console.error(" Invalid plan type detected:", subscription.plan_name)
-    return "basic"
-  }
-
-  return planType
 }
 
 export async function getUserSubscription(): Promise<UserSubscription | null> {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (authError || !user) {
-    const msg = authError?.message || "User not authenticated"
-    throw new Error(msg)
-  }
-
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single()
-
-  if (error && error.code !== "PGRST116") {
-    console.error("Error fetching subscription:", error)
-    throw new Error(error.message || "Error fetching subscription")
-  }
-
-  if (data) {
-    if (data.plan_name) {
-      data.plan_name = data.plan_name.toLowerCase()
-      data.plan_type = data.plan_name
+    if (authError || !user) {
+      return null
     }
-  }
 
-  return data as UserSubscription | null
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error && error.code !== "PGRST116") {
+      console.error("Error fetching subscription:", error)
+      return null
+    }
+
+    if (data) {
+      if (data.plan_name) {
+        data.plan_name = data.plan_name.toLowerCase()
+        data.plan_type = data.plan_name
+      }
+    }
+
+    return data as UserSubscription | null
+  } catch (err) {
+    console.error("Critical error in getUserSubscription:", err)
+    return null
+  }
 }
 
 export async function hasAIAccess(): Promise<boolean> {

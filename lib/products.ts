@@ -17,7 +17,7 @@ export const PRODUCTS: Product[] = [
     planType: "basic",
     billingCycle: "monthly",
     features: [
-      "Até 75 pacientes",
+      "Até 75 clientes",
       "Até 7 profissionais",
       "50 agendamentos/mês",
       "Relatórios básicos",
@@ -32,7 +32,7 @@ export const PRODUCTS: Product[] = [
     planType: "premium",
     billingCycle: "monthly",
     features: [
-      "Até 500 pacientes",
+      "Até 500 clientes",
       "Até 50 profissionais",
       "500 agendamentos/mês",
       "Relatórios avançados",
@@ -50,7 +50,7 @@ export const PRODUCTS: Product[] = [
     planType: "master",
     billingCycle: "monthly",
     features: [
-      "Pacientes ilimitados",
+      "clientes ilimitados",
       "Profissionais ilimitados",
       "Agendamentos ilimitados",
       "Relatórios avançados",

@@ -187,16 +187,16 @@ export async function POST(request: NextRequest) {
         if (rowsErr) throw rowsErr
 
         const map: Record<string, number> = {}
-        ;(rows || []).forEach((r: any) => {
-          const k = r.professional_id || "unknown"
-          map[k] = (map[k] || 0) + 1
-        })
+          ; (rows || []).forEach((r: any) => {
+            const k = r.professional_id || "unknown"
+            map[k] = (map[k] || 0) + 1
+          })
 
         const ids = Object.keys(map).filter((id) => id !== "unknown")
         let namesMap: Record<string, string> = {}
         if (ids.length > 0) {
           const { data: pros } = await supabase.from("professionals").select("id,name").in("id", ids)
-          ;(pros || []).forEach((p: any) => (namesMap[p.id] = p.name))
+            ; (pros || []).forEach((p: any) => (namesMap[p.id] = p.name))
         }
 
         if (Object.keys(map).length === 0) return new Response("Nenhum agendamento encontrado no período solicitado.")
@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
       // Financial intents
       if (/quanto.*dev(e|endo)|quanto.*deve/.test(userText)) {
         // Try to extract patient name from the question
-        const nameMatch = userText.match(/cliente\s+([a-zçãõáéíóú\-\s]{2,50})/) || userText.match(/paciente\s+([a-zçãõáéíóú\-\s]{2,50})/)
+        const nameMatch = userText.match(/cliente\s+([a-zçãõáéíóú\-\s]{2,50})/) || userText.match(/cliente\s+([a-zçãõáéíóú\-\s]{2,50})/)
         const name = nameMatch ? nameMatch[1].trim() : null
 
         if (!name) return new Response("Qual o nome do cliente que você quer consultar?")
@@ -365,19 +365,19 @@ export async function POST(request: NextRequest) {
         let due = 0
         let discounts = 0
 
-        ;(payments || []).forEach((p: any) => {
-          if (p.status === "paid") paid += Number(p.amount || 0)
-          if (p.status === "pending" || p.status === "overdue") due += Number(p.amount || 0) - Number(p.discount || 0)
-          if (p.discount) discounts += Number(p.discount || 0)
-        })
+          ; (payments || []).forEach((p: any) => {
+            if (p.status === "paid") paid += Number(p.amount || 0)
+            if (p.status === "pending" || p.status === "overdue") due += Number(p.amount || 0) - Number(p.discount || 0)
+            if (p.discount) discounts += Number(p.discount || 0)
+          })
 
-        ;(sessions || []).forEach((s: any) => {
-          const price = Number(s.unit_price || 0)
-          const disc = Number(s.discount || 0)
-          if (s.paid) paid += price - disc
-          else due += price - disc
-          if (disc) discounts += disc
-        })
+          ; (sessions || []).forEach((s: any) => {
+            const price = Number(s.unit_price || 0)
+            const disc = Number(s.discount || 0)
+            if (s.paid) paid += price - disc
+            else due += price - disc
+            if (disc) discounts += disc
+          })
 
         const statusText = due > 0 ? `Devendo R$ ${due.toFixed(2)}` : `Em dia (total pago R$ ${paid.toFixed(2)})`
         const reply = `Resumo financeiro de ${patient.name}: ${statusText}. Descontos aplicados: R$ ${discounts.toFixed(2)}.`
@@ -385,9 +385,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Quanto de desconto um cliente tem (ex.: "Quanto de desconto o Cliente Vitor Fabian Daltro tem?")
-      if (/quanto.*descont.*cliente|quanto.*descont.*paciente|desconto.*cliente/.test(userText)) {
-        // Try to extract patient name after the words 'cliente' or 'paciente'
-        const nameMatch = userText.match(/(?:cliente|paciente)\s+([a-zçãõáéíóú\-\s]{2,120})/i)
+      if (/quanto.*descont.*cliente|quanto.*descont.*cliente|desconto.*cliente/.test(userText)) {
+        // Try to extract patient name after the words 'cliente' or 'cliente'
+        const nameMatch = userText.match(/(?:cliente|cliente)\s+([a-zçãõáéíóú\-\s]{2,120})/i)
         const name = nameMatch ? nameMatch[1].trim() : null
 
         if (!name) return new Response("Qual o nome do cliente que você quer consultar sobre descontos?")
@@ -412,12 +412,12 @@ export async function POST(request: NextRequest) {
         ])
 
         let discounts = 0
-        ;(payments || []).forEach((p: any) => {
-          if (p.discount) discounts += Number(p.discount || 0)
-        })
-        ;(sessions || []).forEach((s: any) => {
-          if (s.discount) discounts += Number(s.discount || 0)
-        })
+          ; (payments || []).forEach((p: any) => {
+            if (p.discount) discounts += Number(p.discount || 0)
+          })
+          ; (sessions || []).forEach((s: any) => {
+            if (s.discount) discounts += Number(s.discount || 0)
+          })
 
         return new Response(`Cliente ${patient.name} tem R$ ${discounts.toFixed(2)} em descontos aplicados.`)
       }
@@ -496,9 +496,9 @@ export async function POST(request: NextRequest) {
         if (payErr) throw payErr
 
         let total = 0
-        ;(payments || []).forEach((p: any) => {
-          if (p.status === "paid") total += Number(p.amount || 0) - Number(p.discount || 0)
-        })
+          ; (payments || []).forEach((p: any) => {
+            if (p.status === "paid") total += Number(p.amount || 0) - Number(p.discount || 0)
+          })
 
         // Also include paid financial_sessions (session_date is date)
         const startDateOnly = start.toISOString().split("T")[0]
@@ -511,11 +511,11 @@ export async function POST(request: NextRequest) {
           .lte("session_date", endDateOnly)
 
         if (sessErr) throw sessErr
-        ;(sessions || []).forEach((s: any) => {
-          const price = Number(s.unit_price || 0)
-          const disc = Number(s.discount || 0)
-          if (s.paid) total += price - disc
-        })
+          ; (sessions || []).forEach((s: any) => {
+            const price = Number(s.unit_price || 0)
+            const disc = Number(s.discount || 0)
+            if (s.paid) total += price - disc
+          })
 
         const periodLabel = isoMatch || dmyMatch || dmMatch ? `no dia ${start.toISOString().split("T")[0]}` : /semana/.test(userText) ? "esta semana" : /m(e|ê)s|mes/.test(userText) ? "este mês" : "hoje"
         return new Response(`Total recebido ${periodLabel}: R$ ${total.toFixed(2)}`)
@@ -536,9 +536,9 @@ export async function POST(request: NextRequest) {
         if (payErr) throw payErr
 
         let total = 0
-        ;(payments || []).forEach((p: any) => {
-          if (p.status === "paid") total += Number(p.amount || 0)
-        })
+          ; (payments || []).forEach((p: any) => {
+            if (p.status === "paid") total += Number(p.amount || 0)
+          })
 
         return new Response(`Total recebido na última semana: R$ ${total.toFixed(2)}`)
       }
@@ -571,10 +571,10 @@ export async function POST(request: NextRequest) {
         if (sessErr) throw sessErr
 
         const counts: Record<string, number> = {}
-        ;(sessions || []).forEach((s: any) => {
-          const pid = s.patient_id || "unknown"
-          counts[pid] = (counts[pid] || 0) + 1
-        })
+          ; (sessions || []).forEach((s: any) => {
+            const pid = s.patient_id || "unknown"
+            counts[pid] = (counts[pid] || 0) + 1
+          })
 
         const entries = Object.entries(counts).filter(([id]) => id !== "unknown")
         if (entries.length === 0) return new Response("Nenhuma sessão registrada neste mês.")
