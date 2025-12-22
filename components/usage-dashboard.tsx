@@ -69,7 +69,7 @@ export default function UsageDashboard({ planType }: UsageDashboardProps) {
   ]
 
   const handleUpgrade = () => {
-    router.push("/dashboard?tab=subscriptions")
+    router.push("/?=subscriptions")
   }
 
   return (
@@ -108,15 +108,14 @@ export default function UsageDashboard({ planType }: UsageDashboardProps) {
                 <>
                   <Progress
                     value={data.percentage}
-                    className={`mb-2 ${
-                      warningLevel === "critical"
+                    className={`mb-2 ${warningLevel === "critical"
                         ? "[&>div]:bg-red-600"
                         : warningLevel === "danger"
                           ? "[&>div]:bg-orange-600"
                           : warningLevel === "warning"
                             ? "[&>div]:bg-yellow-600"
                             : "[&>div]:bg-green-600"
-                    }`}
+                      }`}
                   />
                   <p className="text-sm text-muted-foreground">
                     {data.remaining} restante{typeof data.remaining === "number" && data.remaining !== 1 ? "s" : ""}
