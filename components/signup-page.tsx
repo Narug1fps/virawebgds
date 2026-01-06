@@ -26,27 +26,7 @@ export default function SignupPage({ onSignup, onLoginClick, onBackClick, onGoog
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleGoogleSuccess = async (credential: string) => {
-    try {
-      if (onGoogleSignIn) {
-        await onGoogleSignIn()
-      }
-    } catch (error) {
-      toast({
-        title: "Erro ao cadastrar com Google",
-        description: "Ocorreu um erro ao tentar cadastrar com o Google. Tente novamente.",
-        variant: "destructive",
-      })
-    }
-  }
 
-  const handleGoogleError = () => {
-    toast({
-      title: "Erro ao cadastrar com Google",
-      description: "Ocorreu um erro ao tentar cadastrar com o Google. Tente novamente.",
-      variant: "destructive",
-    })
-  }
 
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { strength: 0, label: "" }
@@ -191,13 +171,12 @@ export default function SignupPage({ onSignup, onLoginClick, onBackClick, onGoog
                 <div className="mt-2 flex items-center gap-2">
                   <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={`h-full transition-all ${
-                        passwordStrength.strength <= 1
-                          ? "bg-destructive w-1/3"
-                          : passwordStrength.strength === 2
-                            ? "bg-yellow-500 w-2/3"
-                            : "bg-accent w-full"
-                      }`}
+                      className={`h-full transition-all ${passwordStrength.strength <= 1
+                        ? "bg-destructive w-1/3"
+                        : passwordStrength.strength === 2
+                          ? "bg-yellow-500 w-2/3"
+                          : "bg-accent w-full"
+                        }`}
                     />
                   </div>
                   <span className="text-xs font-medium text-muted-foreground">{passwordStrength.label}</span>
@@ -253,9 +232,8 @@ export default function SignupPage({ onSignup, onLoginClick, onBackClick, onGoog
 
           <div className="mt-4 flex items-center justify-center">
             <div className="w-full max-w-xs">
-              <GoogleButton 
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
+              <GoogleButton
+                onClick={onGoogleSignIn}
                 variant="signup"
                 isLoading={isLoading}
               />

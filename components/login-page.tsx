@@ -25,27 +25,7 @@ export default function LoginPage({ onLogin, onSignupClick, onBackClick, onForgo
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleGoogleSuccess = async (credential: string) => {
-    try {
-      if (onGoogleSignIn) {
-        await onGoogleSignIn()
-      }
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer login com Google",
-        description: "Ocorreu um erro ao tentar fazer login com o Google. Tente novamente.",
-        variant: "destructive",
-      })
-    }
-  }
 
-  const handleGoogleError = () => {
-    toast({
-      title: "Erro ao fazer login com Google",
-      description: "Ocorreu um erro ao tentar fazer login com o Google. Tente novamente.",
-      variant: "destructive",
-    })
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -159,9 +139,8 @@ export default function LoginPage({ onLogin, onSignupClick, onBackClick, onForgo
             </button>
 
             <div className="w-1/2">
-              <GoogleButton 
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
+              <GoogleButton
+                onClick={onGoogleSignIn}
                 variant="signin"
                 isLoading={isLoading}
               />

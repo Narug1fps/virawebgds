@@ -4,10 +4,15 @@ import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 import { Providers } from "./providers"
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono, Outfit } from 'next/font/google'
 
 const inter = Inter({ subsets: ['latin'] })
 const mono = JetBrains_Mono({ subsets: ['latin'] })
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+})
 
 
 
@@ -68,13 +73,13 @@ export default function RootLayout({
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-                "@type": "Organization",
-                name: process.env.NEXT_PUBLIC_COMPANY_NAME || "(coloque aqui)",
-                url: process.env.NEXT_PUBLIC_SITE_URL || "(coloque aqui)",
-                logo:
-                  (process.env.NEXT_PUBLIC_SITE_URL || "") +
-                    (process.env.NEXT_PUBLIC_SITE_LOGO || "/viraweb6.ico"),
-                sameAs: JSON.parse(process.env.NEXT_PUBLIC_SOCIALS || "[]"),
+            "@type": "Organization",
+            name: process.env.NEXT_PUBLIC_COMPANY_NAME || "(coloque aqui)",
+            url: process.env.NEXT_PUBLIC_SITE_URL || "(coloque aqui)",
+            logo:
+              (process.env.NEXT_PUBLIC_SITE_URL || "") +
+              (process.env.NEXT_PUBLIC_SITE_LOGO || "/viraweb6.ico"),
+            sameAs: JSON.parse(process.env.NEXT_PUBLIC_SOCIALS || "[]"),
           }),
         }}
       />
@@ -115,14 +120,15 @@ export default function RootLayout({
       <link rel="manifest" href="/manifest.json" />
       <meta name="theme-color" content={process.env.NEXT_PUBLIC_THEME_COLOR || "#0ea5a4"} />
       <link rel="apple-touch-icon" href={process.env.NEXT_PUBLIC_APPLE_TOUCH_ICON || "/viraweb6.ico"} />
-      <body className={`font-sans antialiased selection:bg-primary selection:text-white`}>
+      <body className={`${outfit.variable} font-sans antialiased selection:bg-primary selection:text-white`}>
         {/*
           Inline script to set the initial theme class on the <html> element
           before React hydrates. This prevents a hydration mismatch where the
           client mutates document.documentElement (next-themes) and the server
           render didn't include the class.
         */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script dangerouslySetInnerHTML={{
+          __html: `
           (function() {
             try {
               // Start light by default. Only enable dark if the user explicitly

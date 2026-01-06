@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 import { streamText, tool } from "ai"
 import { openai } from "@ai-sdk/openai"
-import { z } from "zod"
+import { z } from "zod/v4"
 
 export async function POST(request: NextRequest) {
   try {
